@@ -1,5 +1,41 @@
-import * as core from '@actions/core'
-import { wait } from './wait'
+import * as core from '@actions/core';
+import exec from '@actions/exec';
+import { getPackageManager } from './checks';
+
+export async function getInputs(): Promise<{ [key: string]: string }> {
+  return {
+    service: core.getInput('service-name'),
+    phase: core.getInput('phase'),
+    skipCache: core.getInput('skip-cache'),
+    clearCache: core.getInput('clear-cache'),
+    baseDirectory: core.getInput('base-directory'),
+    emitEnvVars: core.getInput('emit-env-vars'),
+    outputVars: core.getInput('output-vars'),
+    skipRegex: core.getInput('skip-regex'),
+  };
+}
+
+export async function createArgString(inputs: { [key: string]: string }): Promise<string> {
+
+  let argString = '';
+
+  // service
+  argString += `--service ${inputs.service || 'root'}`;
+
+  // phase
+  argString += `--phase ${inputs.phase || ''}`;
+
+  // skip cache
+  argString += inputs.skipCache ? '--skip-cache' : '';
+
+  // clear cache
+  argString += inputs.clearCache ? '--clear-cache' : '';
+
+  // json-full so we get all the metadata
+  argString += ` --format json-full`;
+
+  return argString;
+}
 
 /**
  * The main function for the action.
@@ -7,18 +43,46 @@ import { wait } from './wait'
  */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    const packageManager = await getPackageManager();
+    const inputs = await getInputs();
+    let resolvedConfig = {};
+    await exec.exec(`${packageManager} exec dmno resolve`, [...await createArgString(inputs)], {
+      cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
+      listeners: {
+        stderr: (data: Buffer) => {
+          core.debug(data.toString())
+        },
+        stdout: (data: Buffer) => {
+          core.debug(data.toString())
+          resolvedConfig = JSON.parse(data.toString());
+        }
+      }
+    })
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    if (resolvedConfig === undefined) {
+      throw new Error(`dmno resolve failed or empty output`);
+    }
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    // emit the resolved config as a github action output
+    core.exportVariable('resolved-config', JSON.stringify(resolvedConfig));
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    // set env vars
+    // @ts-ignore
+    const output = Object.entries(resolvedConfig.configNodes).forEach(([key, value]) => {
+      if (value.isSensitive) {
+        core.setSecret(key, value.resolvedValue);
+      } else {
+        core.exportVariable(key, value.resolvedValue);
+      }
+      return {
+        name: key,
+        value: value.resolvedValue
+      }
+    });
+
+    // set outputs, 
+    core.setOutput('dmno', output);
+
   } catch (error) {
     // Fail the workflow run if an error occurs
     if (error instanceof Error) core.setFailed(error.message)
