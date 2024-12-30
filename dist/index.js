@@ -25626,7 +25626,7 @@ module.exports = {
 
 /***/ }),
 
-/***/ 1730:
+/***/ 2122:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -25665,54 +25665,216 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.depsCheck = depsCheck;
+exports.osCheck = osCheck;
+exports.dmnoCheck = dmnoCheck;
+exports.getPackageManager = getPackageManager;
+exports.runAllChecks = runAllChecks;
+const core = __importStar(__nccwpck_require__(7484));
+const exec = __importStar(__nccwpck_require__(5236));
+const fs = __importStar(__nccwpck_require__(9896));
+// check that previous step installed deps from package.json
+function depsCheck() {
+    core.debug('Checking that previous step installed deps from package.json');
+    const workspacePath = process.env.GITHUB_WORKSPACE || '';
+    // check that package.json exists in the workspace
+    if (!fs.existsSync(`${workspacePath}/package.json`)) {
+        throw new Error('package.json does not exist in repository');
+    }
+    // check that node_modules exists in the workspace
+    if (!fs.existsSync(`${workspacePath}/node_modules`)) {
+        throw new Error('node_modules does not exist in repository');
+    }
+    return true;
+}
+function osCheck() {
+    core.debug('Checking that the operating system is supported');
+    // current only support macos and linux
+    if (!(core.platform.isLinux || core.platform.isMacOS)) {
+        throw new Error('Unsupported operating system - only Linux and macOS are supported');
+    }
+    return true;
+}
+// check that dmno is installed
+async function dmnoCheck() {
+    try {
+        core.debug('Checking that dmno is installed');
+        const packageManager = getPackageManager();
+        try {
+            await exec.exec(`${packageManager} exec dmno`, ['--version'], {
+                silent: true,
+                cwd: process.env.GITHUB_WORKSPACE || '',
+                listeners: {
+                    stderr: (data) => {
+                        core.debug(data.toString());
+                    }
+                }
+            });
+        }
+        catch (error) {
+            throw new Error(`dmno is not installed or not available in the current working directory, error: ${String(error)}`);
+        }
+        core.debug('dmno is installed and available');
+        return true;
+    }
+    catch (error) {
+        if (error instanceof Error) {
+            core.setFailed(error.message);
+            return false;
+        }
+        core.setFailed('An unexpected error occurred');
+        return false;
+    }
+}
+// detect which package manager is used in the repository
+function getPackageManager() {
+    core.debug('Checking which package manager is used in the repository');
+    const workspacePath = process.env.GITHUB_WORKSPACE || '';
+    const packageJsonPath = `${workspacePath}/package.json`;
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+    const packageManager = packageJson.packageManager;
+    if (!packageManager) {
+        throw new Error('No package manager specified in package.json');
+    }
+    core.debug(`Package manager: ${packageManager}`);
+    return packageManager;
+}
+// run all checks
+async function runAllChecks() {
+    osCheck();
+    depsCheck();
+    await dmnoCheck();
+    return true;
+}
+
+
+/***/ }),
+
+/***/ 1730:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.run = run;
 const core = __importStar(__nccwpck_require__(7484));
-const wait_1 = __nccwpck_require__(910);
+const exec_1 = __importDefault(__nccwpck_require__(5236));
+const checks_1 = __nccwpck_require__(2122);
+function getInputs() {
+    return {
+        serviceName: core.getInput('service-name'),
+        baseDirectory: core.getInput('base-directory'),
+        phase: core.getInput('phase'),
+        emitEnvVars: core.getBooleanInput('emit-env-vars'),
+        outputVars: core.getBooleanInput('output-vars'),
+        skipRegex: core.getInput('skip-regex'),
+        skipCache: core.getBooleanInput('skip-cache'),
+        clearCache: core.getBooleanInput('clear-cache')
+    };
+}
+function createArgString(inputs) {
+    const args = [];
+    // service
+    args.push(`--service ${inputs.serviceName || 'root'}`);
+    // phase
+    if (inputs.phase) {
+        args.push(`--phase ${inputs.phase}`);
+    }
+    // skip cache
+    if (inputs.skipCache) {
+        args.push('--skip-cache');
+    }
+    // clear cache
+    if (inputs.clearCache) {
+        args.push('--clear-cache');
+    }
+    // json-full so we get all the metadata
+    args.push('--format json-full');
+    return args.join(' ');
+}
 /**
  * The main function for the action.
  * @returns {Promise<void>} Resolves when the action is complete.
  */
 async function run() {
     try {
-        const ms = core.getInput('milliseconds');
-        // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-        core.debug(`Waiting ${ms} milliseconds ...`);
-        // Log the current timestamp, wait, then log the new timestamp
-        core.debug(new Date().toTimeString());
-        await (0, wait_1.wait)(parseInt(ms, 10));
-        core.debug(new Date().toTimeString());
-        // Set outputs for other workflow steps to use
-        core.setOutput('time', new Date().toTimeString());
+        const packageManager = (0, checks_1.getPackageManager)();
+        const inputs = getInputs();
+        let resolvedConfig = { configNodes: {} };
+        await exec_1.default.exec(`${packageManager} exec dmno resolve`, [...createArgString(inputs)], {
+            cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
+            listeners: {
+                stderr: (data) => {
+                    core.debug(data.toString());
+                },
+                stdout: (data) => {
+                    core.debug(data.toString());
+                    resolvedConfig = JSON.parse(data.toString());
+                }
+            }
+        });
+        if (!resolvedConfig.configNodes) {
+            throw new Error(`dmno resolve failed or empty output`);
+        }
+        // emit the resolved config as a github action output
+        core.exportVariable('resolved-config', JSON.stringify(resolvedConfig));
+        if (inputs.outputVars) {
+            core.setOutput('dmno', JSON.stringify(resolvedConfig));
+        }
+        // Type-safe iteration over config nodes
+        for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
+            if (value.resolvedValue !== undefined) {
+                if (value.isSensitive) {
+                    core.setSecret(value.resolvedValue);
+                }
+                core.exportVariable(key, value.resolvedValue);
+            }
+        }
     }
     catch (error) {
-        // Fail the workflow run if an error occurs
-        if (error instanceof Error)
+        if (error instanceof Error) {
             core.setFailed(error.message);
-    }
-}
-
-
-/***/ }),
-
-/***/ 910:
-/***/ ((__unused_webpack_module, exports) => {
-
-"use strict";
-
-Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.wait = wait;
-/**
- * Wait for a number of milliseconds.
- * @param milliseconds The number of milliseconds to wait.
- * @returns {Promise<string>} Resolves with 'done!' after the wait is over.
- */
-async function wait(milliseconds) {
-    return new Promise(resolve => {
-        if (isNaN(milliseconds)) {
-            throw new Error('milliseconds not a number');
         }
-        setTimeout(() => resolve('done!'), milliseconds);
-    });
+        else {
+            core.setFailed('An unexpected error occurred');
+        }
+    }
 }
 
 

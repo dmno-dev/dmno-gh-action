@@ -56,10 +56,10 @@ function createArgString(inputs: InputOptions): string {
 interface ResolvedConfig {
   configNodes: {
     [key: string]: {
-      resolvedValue: string;
-      isSensitive?: boolean;
-    };
-  };
+      resolvedValue: string
+      isSensitive?: boolean
+    }
+  }
 }
 
 /**
