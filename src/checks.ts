@@ -17,6 +17,15 @@ export async function depsCheck(): Promise<void> {
 
 }
 
+export async function osCheck(): Promise<boolean> {
+    core.debug('Checking that the operating system is supported')
+    // current only support macos and linux
+    if (!(core.platform.isLinux || core.platform.isMacOS)) {
+        throw new Error(`Unsupported operating system, ${core.platform} is not supported`)
+    }
+    return true;
+}
+
 // check that dmno is installed 
 export async function dmnoCheck(): Promise<boolean> {
     try {
@@ -74,6 +83,7 @@ export async function getPackageManager(): Promise<string> {
 
 // run all checks
 export async function runAllChecks(): Promise<void> {
+    await osCheck();
     await depsCheck();
     await dmnoCheck();
 }

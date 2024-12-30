@@ -23,7 +23,7 @@ export async function createArgString(inputs: { [key: string]: string }): Promis
   argString += `--service ${inputs.service || 'root'}`;
 
   // phase
-  argString += `--phase ${inputs.phase || ''}`;
+  argString += inputs.phase ? `--phase ${inputs.phase}` : '';
 
   // skip cache
   argString += inputs.skipCache ? '--skip-cache' : '';
@@ -68,11 +68,17 @@ export async function run(): Promise<void> {
 
     // set env vars
     // @ts-ignore
-    const output = Object.entries(resolvedConfig.configNodes).forEach(([key, value]) => {
-      if (value.isSensitive) {
-        core.setSecret(key, value.resolvedValue);
-      } else {
+    const output = Object.entries(resolvedConfig.configNodes).forEach(([key, value]: [string, any]) => {
+      // skip if skipRegex is set and the key matches
+      if (inputs.skipRegex && new RegExp(inputs.skipRegex).test(key)) {
+        return;
+      }
+      // emit env vars
+      if (inputs.emitEnvVars) {
         core.exportVariable(key, value.resolvedValue);
+      }
+      if (value.isSensitive) {
+        core.setSecret(value.resolvedValue);
       }
       return {
         name: key,
@@ -80,8 +86,10 @@ export async function run(): Promise<void> {
       }
     });
 
-    // set outputs, 
-    core.setOutput('dmno', output);
+    // set all outputs at once
+    if (inputs.outputVars) {
+      core.setOutput('dmno', output);
+    }
 
   } catch (error) {
     // Fail the workflow run if an error occurs
