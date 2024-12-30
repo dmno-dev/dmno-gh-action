@@ -1,8 +1,8 @@
-import * as core from '@actions/core';
-import * as exec from '@actions/exec';
-import * as fs from 'fs';
+import * as core from '@actions/core'
+import * as exec from '@actions/exec'
+import * as fs from 'fs'
 // check that previous step installed deps from package.json
-export async function depsCheck(): Promise<void> {
+export function depsCheck(): boolean {
     core.debug('Checking that previous step installed deps from package.json')
     const workspacePath = process.env.GITHUB_WORKSPACE || ''
 
@@ -14,24 +14,25 @@ export async function depsCheck(): Promise<void> {
     if (!fs.existsSync(`${workspacePath}/node_modules`)) {
         throw new Error('node_modules does not exist in repository')
     }
-
-}
-
-export async function osCheck(): Promise<boolean> {
-    core.debug('Checking that the operating system is supported')
-    // current only support macos and linux
-    if (!(core.platform.isLinux || core.platform.isMacOS)) {
-        throw new Error(`Unsupported operating system, ${core.platform} is not supported`)
-    }
     return true;
 }
 
-// check that dmno is installed 
+export function osCheck(): boolean {
+    core.debug('Checking that the operating system is supported')
+    // current only support macos and linux
+    if (!(core.platform.isLinux || core.platform.isMacOS)) {
+        throw new Error(
+            'Unsupported operating system - only Linux and macOS are supported'
+        )
+    }
+    return true
+}
+
+// check that dmno is installed
 export async function dmnoCheck(): Promise<boolean> {
     try {
         core.debug('Checking that dmno is installed')
-        let dmnoExists = true
-        const packageManager = await getPackageManager();
+        const packageManager = getPackageManager()
         try {
             await exec.exec(`${packageManager} exec dmno`, ['--version'], {
                 silent: true,
@@ -43,47 +44,47 @@ export async function dmnoCheck(): Promise<boolean> {
                 }
             })
         } catch (error) {
-            dmnoExists = false
-            return false;
+            throw new Error(`dmno is not installed or not available in the current working directory, error: ${String(error)}`)
         }
 
-        if (!dmnoExists) {
-            throw new Error(
-                'dmno is not installed or not available in the current working directory'
-            );
-        }
-
-        core.debug('dmno is installed and available');
-        return true;
-    } catch (error) {
+        core.debug('dmno is installed and available')
+        return true
+    } catch (error: unknown) {
         if (error instanceof Error) {
             core.setFailed(error.message)
-            return false;
+            return false
         }
         core.setFailed('An unexpected error occurred')
-        return false;
+        return false
     }
 }
 
 // detect which package manager is used in the repository
-export async function getPackageManager(): Promise<string> {
+export function getPackageManager(): string {
     core.debug('Checking which package manager is used in the repository')
     const workspacePath = process.env.GITHUB_WORKSPACE || ''
     const packageJsonPath = `${workspacePath}/package.json`
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'))
+
+    // Add type safety for package.json parsing
+    interface PackageJson {
+        packageManager?: string;
+    }
+
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')) as PackageJson
     const packageManager = packageJson.packageManager
 
     if (!packageManager) {
         throw new Error('No package manager specified in package.json')
     }
 
-    core.debug(`Package manager: ${packageManager}`);
-    return packageManager;
+    core.debug(`Package manager: ${packageManager}`)
+    return packageManager
 }
 
 // run all checks
-export async function runAllChecks(): Promise<void> {
-    await osCheck();
-    await depsCheck();
-    await dmnoCheck();
+export async function runAllChecks(): Promise<boolean> {
+    osCheck()
+    depsCheck()
+    await dmnoCheck()
+    return true;
 }

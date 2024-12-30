@@ -10,11 +10,14 @@ branding:
 # Define your inputs here.
 inputs:
   service-name:
-    description: 'The name of the service to generate secrets for, defaults to "root"'
+    description:
+      'The name of the service to generate secrets for, defaults to "root"'
     required: false
     default: 'root'
   base-directory:
-    description: 'The base directory to generate secrets for, if not provided, the current working directory will be used'
+    description:
+      'The base directory to generate secrets for, if not provided, the current
+      working directory will be used'
     required: false
     default: '.'
   phase:
@@ -26,7 +29,8 @@ inputs:
     required: false
     default: true
   output-vars:
-    description: 'Whether to also provide the variables in the output, defaults to false'
+    description:
+      'Whether to also provide the variables in the output, defaults to false'
     required: false
     default: false
   skip-regex:
@@ -46,7 +50,6 @@ inputs:
 outputs:
   dmno:
     description: 'A stringified JSON object containing the generated variables'
-
 
 runs:
   using: node20
