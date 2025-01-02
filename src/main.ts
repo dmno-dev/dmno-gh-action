@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import exec from '@actions/exec'
-import { getPackageManager } from './checks'
+import { getPackageManager } from './checks.js'
 
 interface InputOptions {
   serviceName: string
@@ -26,7 +26,7 @@ function getInputs(): InputOptions {
   }
 }
 
-function createArgString(inputs: InputOptions): string {
+function createArgString(inputs: InputOptions): string[] {
   const args: string[] = []
 
   // service
@@ -50,7 +50,9 @@ function createArgString(inputs: InputOptions): string {
   // json-full so we get all the metadata
   args.push('--format json-full')
 
-  return args.join(' ')
+  // console.log(args.join(' '))
+
+  return args
 }
 
 interface ResolvedConfig {
@@ -74,7 +76,7 @@ export async function run(): Promise<void> {
 
     await exec.exec(
       `${packageManager} exec dmno resolve`,
-      [...createArgString(inputs)],
+      createArgString(inputs),
       {
         cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
         listeners: {
@@ -93,14 +95,10 @@ export async function run(): Promise<void> {
       throw new Error(`dmno resolve failed or empty output`)
     }
 
-    // emit the resolved config as a github action output
-    core.exportVariable('resolved-config', JSON.stringify(resolvedConfig))
-
     if (inputs.outputVars) {
       core.setOutput('dmno', JSON.stringify(resolvedConfig))
     }
 
-    // Type-safe iteration over config nodes
     for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
       if (value.resolvedValue !== undefined) {
         if (value.isSensitive) {
