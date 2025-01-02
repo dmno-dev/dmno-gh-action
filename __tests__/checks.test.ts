@@ -53,21 +53,27 @@ describe('checks', () => {
   })
 
   describe('osCheck', () => {
+    beforeEach(() => {
+      // Reset platform properties before each test
+      Object.defineProperty(mockCore.platform, 'isLinux', { value: false })
+      Object.defineProperty(mockCore.platform, 'isMacOS', { value: false })
+    })
+
     it('should pass on Linux', () => {
-      mockCore.platform.isLinux = true
-      mockCore.platform.isMacOS = false
+      Object.defineProperty(mockCore.platform, 'isLinux', { value: true })
+      Object.defineProperty(mockCore.platform, 'isMacOS', { value: false })
       expect(osCheck()).toBe(true)
     })
 
     it('should pass on macOS', () => {
-      mockCore.platform.isLinux = false
-      mockCore.platform.isMacOS = true
+      Object.defineProperty(mockCore.platform, 'isLinux', { value: false })
+      Object.defineProperty(mockCore.platform, 'isMacOS', { value: true })
       expect(osCheck()).toBe(true)
     })
 
     it('should throw on unsupported OS', () => {
-      mockCore.platform.isLinux = false
-      mockCore.platform.isMacOS = false
+      Object.defineProperty(mockCore.platform, 'isLinux', { value: false })
+      Object.defineProperty(mockCore.platform, 'isMacOS', { value: false })
       expect(() => osCheck()).toThrow('Unsupported operating system')
     })
   })
@@ -119,7 +125,7 @@ describe('checks', () => {
   describe('runAllChecks', () => {
     it('should run all checks successfully', async () => {
       // Setup successful mocks
-      mockCore.platform.isLinux = true
+      Object.defineProperty(mockCore.platform, 'isLinux', { value: true })
       mockFs.existsSync.mockReturnValue(true)
       mockFs.readFileSync.mockReturnValue('{"packageManager": "npm"}')
       mockExec.exec.mockResolvedValue(0)
@@ -130,8 +136,8 @@ describe('checks', () => {
 
     it('should fail if any check fails', async () => {
       // Make OS check fail
-      mockCore.platform.isLinux = false
-      mockCore.platform.isMacOS = false
+      Object.defineProperty(mockCore.platform, 'isLinux', { value: false })
+      Object.defineProperty(mockCore.platform, 'isMacOS', { value: false })
 
       await expect(runAllChecks()).rejects.toThrow(
         'Unsupported operating system'
