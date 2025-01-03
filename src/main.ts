@@ -1,6 +1,6 @@
 import * as core from '@actions/core'
 import exec from '@actions/exec'
-import { getPackageManager } from './checks.js'
+import { getPackageManager, runAllChecks } from './checks.js'
 
 interface InputOptions {
   serviceName: string
@@ -70,6 +70,7 @@ interface ResolvedConfig {
  */
 export async function run(): Promise<void> {
   try {
+    await runAllChecks()
     const packageManager = getPackageManager()
     const inputs = getInputs()
     let resolvedConfig: ResolvedConfig = { configNodes: {} }

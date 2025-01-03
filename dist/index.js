@@ -27431,10 +27431,10 @@ module.exports = parseParams
 var __webpack_exports__ = {};
 
 // EXTERNAL MODULE: ./node_modules/@actions/core/lib/core.js
-var lib_core = __nccwpck_require__(7484);
+var core = __nccwpck_require__(7484);
 // EXTERNAL MODULE: ./node_modules/@actions/exec/lib/exec.js
-var lib_exec = __nccwpck_require__(5236);
-var exec_default = /*#__PURE__*/__nccwpck_require__.n(lib_exec);
+var exec = __nccwpck_require__(5236);
+var exec_default = /*#__PURE__*/__nccwpck_require__.n(exec);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(9896);
 ;// CONCATENATED MODULE: ./src/checks.ts
@@ -27446,11 +27446,11 @@ function depsCheck() {
     core.debug('Checking that previous step installed deps from package.json');
     const workspacePath = process.env.GITHUB_WORKSPACE || '';
     // check that package.json exists in the workspace
-    if (!fs.existsSync(`${workspacePath}/package.json`)) {
+    if (!external_fs_.existsSync(`${workspacePath}/package.json`)) {
         throw new Error('package.json does not exist in repository');
     }
     // check that node_modules exists in the workspace
-    if (!fs.existsSync(`${workspacePath}/node_modules`)) {
+    if (!external_fs_.existsSync(`${workspacePath}/node_modules`)) {
         throw new Error('node_modules does not exist in repository');
     }
     return true;
@@ -27496,7 +27496,7 @@ async function dmnoCheck() {
 }
 // detect which package manager is used in the repository
 function getPackageManager() {
-    lib_core.debug('Checking which package manager is used in the repository');
+    core.debug('Checking which package manager is used in the repository');
     const workspacePath = process.env.GITHUB_WORKSPACE || '';
     const packageJsonPath = `${workspacePath}/package.json`;
     const packageJson = JSON.parse(external_fs_.readFileSync(packageJsonPath, 'utf8'));
@@ -27504,7 +27504,7 @@ function getPackageManager() {
     if (!packageManager) {
         throw new Error('No package manager specified in package.json');
     }
-    lib_core.debug(`Package manager: ${packageManager}`);
+    core.debug(`Package manager: ${packageManager}`);
     return packageManager;
 }
 // run all checks
@@ -27521,14 +27521,14 @@ async function runAllChecks() {
 
 function getInputs() {
     return {
-        serviceName: lib_core.getInput('service-name'),
-        baseDirectory: lib_core.getInput('base-directory'),
-        phase: lib_core.getInput('phase'),
-        emitEnvVars: lib_core.getBooleanInput('emit-env-vars'),
-        outputVars: lib_core.getBooleanInput('output-vars'),
-        skipRegex: lib_core.getInput('skip-regex'),
-        skipCache: lib_core.getBooleanInput('skip-cache'),
-        clearCache: lib_core.getBooleanInput('clear-cache')
+        serviceName: core.getInput('service-name'),
+        baseDirectory: core.getInput('base-directory'),
+        phase: core.getInput('phase'),
+        emitEnvVars: core.getBooleanInput('emit-env-vars'),
+        outputVars: core.getBooleanInput('output-vars'),
+        skipRegex: core.getInput('skip-regex'),
+        skipCache: core.getBooleanInput('skip-cache'),
+        clearCache: core.getBooleanInput('clear-cache')
     };
 }
 function createArgString(inputs) {
@@ -27558,6 +27558,7 @@ function createArgString(inputs) {
  */
 async function run() {
     try {
+        await runAllChecks();
         const packageManager = getPackageManager();
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
@@ -27565,10 +27566,10 @@ async function run() {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
             listeners: {
                 stderr: (data) => {
-                    lib_core.debug(data.toString());
+                    core.debug(data.toString());
                 },
                 stdout: (data) => {
-                    lib_core.debug(data.toString());
+                    core.debug(data.toString());
                     resolvedConfig = JSON.parse(data.toString());
                 }
             }
@@ -27577,23 +27578,23 @@ async function run() {
             throw new Error(`dmno resolve failed or empty output`);
         }
         if (inputs.outputVars) {
-            lib_core.setOutput('dmno', JSON.stringify(resolvedConfig));
+            core.setOutput('dmno', JSON.stringify(resolvedConfig));
         }
         for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
             if (value.resolvedValue !== undefined) {
                 if (value.isSensitive) {
-                    lib_core.setSecret(value.resolvedValue);
+                    core.setSecret(value.resolvedValue);
                 }
-                lib_core.exportVariable(key, value.resolvedValue);
+                core.exportVariable(key, value.resolvedValue);
             }
         }
     }
     catch (error) {
         if (error instanceof Error) {
-            lib_core.setFailed(error.message);
+            core.setFailed(error.message);
         }
         else {
-            lib_core.setFailed('An unexpected error occurred');
+            core.setFailed('An unexpected error occurred');
         }
     }
 }
