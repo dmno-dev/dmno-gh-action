@@ -8,11 +8,15 @@ export function depsCheck(): boolean {
 
   // check that package.json exists in the workspace
   if (!fs.existsSync(`${workspacePath}/package.json`)) {
-    throw new Error('package.json does not exist in repository')
+    throw new Error(
+      'package.json does not exist in repository at ' + workspacePath
+    )
   }
   // check that node_modules exists in the workspace
   if (!fs.existsSync(`${workspacePath}/node_modules`)) {
-    throw new Error('node_modules does not exist in repository')
+    throw new Error(
+      'node_modules does not exist in repository at ' + workspacePath
+    )
   }
   return true
 }

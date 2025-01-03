@@ -27447,11 +27447,11 @@ function depsCheck() {
     const workspacePath = process.env.GITHUB_WORKSPACE || '';
     // check that package.json exists in the workspace
     if (!external_fs_.existsSync(`${workspacePath}/package.json`)) {
-        throw new Error('package.json does not exist in repository');
+        throw new Error('package.json does not exist in repository at ' + workspacePath);
     }
     // check that node_modules exists in the workspace
     if (!external_fs_.existsSync(`${workspacePath}/node_modules`)) {
-        throw new Error('node_modules does not exist in repository');
+        throw new Error('node_modules does not exist in repository at ' + workspacePath);
     }
     return true;
 }
