@@ -60,7 +60,7 @@ describe('run', () => {
     // Verify dmno was executed with correct arguments
     expect(mockExec.exec).toHaveBeenCalledWith(
       'npm exec dmno resolve',
-      ['--service test-service', '--format json-full'],
+      ['--service test-service', '--format json-full', '--no-prompt'],
       expect.any(Object)
     )
   })

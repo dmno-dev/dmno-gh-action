@@ -27517,6 +27517,8 @@ function createArgString(inputs) {
     }
     // json-full so we get all the metadata
     args.push('--format json-full');
+    // make cli non-interactive
+    args.push('--no-prompt');
     // console.log(args.join(' '))
     return args;
 }
