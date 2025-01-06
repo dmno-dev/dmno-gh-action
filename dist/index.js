@@ -27504,7 +27504,8 @@ function getInputs() {
 function createArgString(inputs) {
     const args = [];
     // service
-    args.push(`--service ${inputs.serviceName || 'root'}`);
+    const serviceName = inputs.serviceName || 'root';
+    args.push(`--service ${serviceName}`);
     // phase
     if (inputs.phase) {
         args.push(`--phase ${inputs.phase}`);
