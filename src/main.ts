@@ -79,18 +79,22 @@ export async function run(): Promise<void> {
     const inputs = getInputs()
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
 
-    await exec(`${packageManager} exec dmno resolve`, createArgString(inputs), {
-      cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
-      listeners: {
-        stderr: (data: Buffer) => {
-          core.debug(data.toString())
-        },
-        stdout: (data: Buffer) => {
-          core.debug(data.toString())
-          resolvedConfig = JSON.parse(data.toString()) as ResolvedConfig
+    await exec(
+      `${packageManager} exec -- dmno resolve`,
+      createArgString(inputs),
+      {
+        cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
+        listeners: {
+          stderr: (data: Buffer) => {
+            core.debug(data.toString())
+          },
+          stdout: (data: Buffer) => {
+            core.debug(data.toString())
+            resolvedConfig = JSON.parse(data.toString()) as ResolvedConfig
+          }
         }
       }
-    })
+    )
 
     if (!resolvedConfig.configNodes) {
       throw new Error(`dmno resolve failed or empty output`)
