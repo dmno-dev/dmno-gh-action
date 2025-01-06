@@ -79,6 +79,8 @@ export async function run(): Promise<void> {
     const inputs = getInputs()
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
 
+    let outputData = ''
+
     await exec(
       `${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`,
       [],
@@ -89,12 +91,22 @@ export async function run(): Promise<void> {
             core.debug(data.toString())
           },
           stdout: (data: Buffer) => {
-            core.debug(data.toString())
-            resolvedConfig = JSON.parse(data.toString()) as ResolvedConfig
+            // core.debug(data.toString())
+            outputData += data.toString()
           }
         }
       }
     )
+
+    // Parse the complete output after exec finishes
+    try {
+      // Clean the string before parsing
+      const cleanedOutput = outputData.trim() // Remove leading/trailing whitespace
+      resolvedConfig = JSON.parse(cleanedOutput) as ResolvedConfig
+    } catch (error) {
+      core.debug('Failed to parse JSON output: ' + outputData)
+      throw error
+    }
 
     if (!resolvedConfig.configNodes) {
       throw new Error(`dmno resolve failed or empty output`)
