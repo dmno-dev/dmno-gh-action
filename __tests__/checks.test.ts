@@ -108,7 +108,12 @@ describe('checks', () => {
   describe('getPackageManager', () => {
     it('should return package manager from package.json', () => {
       mockFs.readFileSync.mockReturnValue('{"packageManager": "yarn@3.0.0"}')
-      expect(getPackageManager()).toBe('yarn@3.0.0')
+      expect(getPackageManager()).toBe('yarn')
+    })
+
+    it('should return pnpm when pnpm is specified', () => {
+      mockFs.readFileSync.mockReturnValue('{"packageManager": "pnpm@9.1.0"}')
+      expect(getPackageManager()).toBe('pnpm')
     })
 
     it('should return npm when no package manager is specified', () => {

@@ -27411,6 +27411,7 @@ var external_fs_ = __nccwpck_require__(9896);
 
 
 
+
 // check that previous step installed deps from package.json
 function depsCheck() {
     core.debug('Checking that previous step installed deps from package.json');
@@ -27437,11 +27438,12 @@ function osCheck() {
 async function dmnoCheck() {
     try {
         core.debug('Checking that dmno is installed');
+        const inputs = getInputs();
         const packageManager = getPackageManager();
         try {
             await exec.exec(`${packageManager} exec dmno`, ['--version'], {
                 silent: true,
-                cwd: process.env.GITHUB_WORKSPACE || '',
+                cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
                 listeners: {
                     stderr: (data) => {
                         core.debug(data.toString());
@@ -27471,7 +27473,7 @@ function getPackageManager() {
     const packageJsonPath = `${workspacePath}/package.json`;
     const packageJson = JSON.parse(external_fs_.readFileSync(packageJsonPath, 'utf8'));
     // default to npm if no package manager is specified
-    const packageManager = packageJson.packageManager || 'npm';
+    const packageManager = packageJson.packageManager?.substring(0, packageJson.packageManager.indexOf('@')) || 'npm';
     core.debug(`Package manager: ${packageManager}`);
     return packageManager;
 }

@@ -13,7 +13,7 @@ interface InputOptions {
   clearCache: boolean
 }
 
-function getInputs(): InputOptions {
+export function getInputs(): InputOptions {
   return {
     serviceName: core.getInput('service-name'),
     baseDirectory: core.getInput('base-directory'),
