@@ -27535,7 +27535,7 @@ async function run() {
         const packageManager = getPackageManager();
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
-        await (0,exec.exec)(`${packageManager} exec -- dmno resolve`, createArgString(inputs), {
+        await (0,exec.exec)(`${packageManager}`, ['exec', 'dmno', 'resolve', ...createArgString(inputs)], {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
             listeners: {
                 stderr: (data) => {

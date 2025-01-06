@@ -80,8 +80,8 @@ export async function run(): Promise<void> {
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
 
     await exec(
-      `${packageManager} exec -- dmno resolve`,
-      createArgString(inputs),
+      `${packageManager}`,
+      ['exec', 'dmno', 'resolve', ...createArgString(inputs)],
       {
         cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
         listeners: {
