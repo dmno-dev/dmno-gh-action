@@ -111,9 +111,9 @@ describe('checks', () => {
       expect(getPackageManager()).toBe('yarn@3.0.0')
     })
 
-    it('should throw when no package manager is specified', () => {
-      mockFs.readFileSync.mockReturnValue('{}')
-      expect(() => getPackageManager()).toThrow('No package manager specified')
+    it('should return npm when no package manager is specified', () => {
+      mockFs.readFileSync.mockReturnValue('{"packageManager": "npm"}')
+      expect(getPackageManager()).toBe('npm')
     })
 
     it('should throw when package.json is invalid', () => {

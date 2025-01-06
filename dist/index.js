@@ -27500,10 +27500,8 @@ function getPackageManager() {
     const workspacePath = process.env.GITHUB_WORKSPACE || '';
     const packageJsonPath = `${workspacePath}/package.json`;
     const packageJson = JSON.parse(external_fs_.readFileSync(packageJsonPath, 'utf8'));
-    const packageManager = packageJson.packageManager;
-    if (!packageManager) {
-        throw new Error('No package manager specified in package.json');
-    }
+    // default to npm if no package manager is specified
+    const packageManager = packageJson.packageManager || 'npm';
     core.debug(`Package manager: ${packageManager}`);
     return packageManager;
 }

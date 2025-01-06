@@ -79,11 +79,8 @@ export function getPackageManager(): string {
   const packageJson = JSON.parse(
     fs.readFileSync(packageJsonPath, 'utf8')
   ) as PackageJson
-  const packageManager = packageJson.packageManager
-
-  if (!packageManager) {
-    throw new Error('No package manager specified in package.json')
-  }
+  // default to npm if no package manager is specified
+  const packageManager = packageJson.packageManager || 'npm'
 
   core.debug(`Package manager: ${packageManager}`)
   return packageManager
