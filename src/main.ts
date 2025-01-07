@@ -1,7 +1,6 @@
 import * as core from '@actions/core'
-import { exec } from '@actions/exec'
+import { getExecOutput } from '@actions/exec'
 import { getPackageManager, runAllChecks } from './checks.js'
-
 interface InputOptions {
   serviceName: string
   baseDirectory: string
@@ -79,32 +78,28 @@ export async function run(): Promise<void> {
     const inputs = getInputs()
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
 
-    let outputData = ''
-
-    await exec(
+    const { stdout, stderr } = await getExecOutput(
       `${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`,
       [],
       {
-        cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
-        listeners: {
-          stderr: (data: Buffer) => {
-            core.debug(data.toString())
-          },
-          stdout: (data: Buffer) => {
-            // core.debug(data.toString())
-            outputData += data.toString()
-          }
-        }
+        cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
       }
     )
+
+    if (stderr) {
+      core.error(`Error: ${stderr}`)
+      throw new Error(`dmno resolve failed or empty output`)
+    }
 
     // Parse the complete output after exec finishes
     try {
       // Clean the string before parsing
-      const cleanedOutput = outputData.trim() // Remove leading/trailing whitespace
+      const cleanedOutput = stdout.trim() // Remove leading/trailing whitespace
       resolvedConfig = JSON.parse(cleanedOutput) as ResolvedConfig
     } catch (error) {
-      core.debug('Failed to parse JSON output: ' + outputData)
+      core.debug(
+        `Failed to parse JSON output: ${error instanceof Error ? error.message : String(error)}`
+      )
       throw error
     }
 

@@ -1,13 +1,16 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
-import { run } from '../src/main.ts'
-import { getPackageManager } from '../src/checks.ts'
+import { run } from '../src/main.js'
+import { getPackageManager } from '../src/checks.js'
 
 // Mock dependencies
 vi.mock('@actions/core')
 vi.mock('@actions/exec')
-vi.mock('../src/checks.ts')
+vi.mock('../src/checks.js', () => ({
+  getPackageManager: vi.fn(),
+  runAllChecks: vi.fn().mockResolvedValue(true)
+}))
 
 describe('run', () => {
   const mockCore = vi.mocked(core)
@@ -48,17 +51,15 @@ describe('run', () => {
       }
     }
 
-    mockExec.exec.mockImplementation(async (_, __, options) => {
-      if (options?.listeners?.stdout) {
-        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
-      }
-      return 0
+    mockExec.getExecOutput.mockResolvedValue({
+      stdout: JSON.stringify(sampleConfig),
+      stderr: '',
+      exitCode: 0
     })
 
     await run()
 
-    // Verify dmno was executed with correct arguments
-    expect(mockExec.exec).toHaveBeenCalledWith(
+    expect(mockExec.getExecOutput).toHaveBeenCalledWith(
       'npm exec dmno resolve --service test-service --format json-full --no-prompt',
       [],
       expect.any(Object)
@@ -75,18 +76,14 @@ describe('run', () => {
       }
     }
 
-    mockExec.exec.mockImplementation(async (_, __, options) => {
-      if (options?.listeners?.stdout) {
-        options.listeners.stdout(
-          Buffer.from(JSON.stringify(configWithSensitive))
-        )
-      }
-      return 0
+    mockExec.getExecOutput.mockResolvedValue({
+      stdout: JSON.stringify(configWithSensitive),
+      stderr: '',
+      exitCode: 0
     })
 
     await run()
 
-    // Verify secret was marked as secret
     expect(mockCore.setSecret).toHaveBeenCalledWith('secret-value')
     expect(mockCore.exportVariable).toHaveBeenCalledWith(
       'SECRET_VAR',
@@ -95,8 +92,8 @@ describe('run', () => {
   })
 
   it('should handle output vars when enabled', async () => {
-    mockCore.getBooleanInput.mockImplementation((name: string) =>
-      name === 'output-vars' ? true : false
+    mockCore.getBooleanInput.mockImplementation(
+      (name: string) => name === 'output-vars'
     )
 
     const sampleConfig = {
@@ -107,11 +104,10 @@ describe('run', () => {
       }
     }
 
-    mockExec.exec.mockImplementation(async (_, __, options) => {
-      if (options?.listeners?.stdout) {
-        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
-      }
-      return 0
+    mockExec.getExecOutput.mockResolvedValue({
+      stdout: JSON.stringify(sampleConfig),
+      stderr: '',
+      exitCode: 0
     })
 
     await run()
@@ -124,7 +120,7 @@ describe('run', () => {
 
   it('should handle errors gracefully', async () => {
     const errorMessage = 'Command failed'
-    mockExec.exec.mockRejectedValue(new Error(errorMessage))
+    mockExec.getExecOutput.mockRejectedValue(new Error(errorMessage))
 
     await run()
 
@@ -132,11 +128,10 @@ describe('run', () => {
   })
 
   it('should handle empty config gracefully', async () => {
-    mockExec.exec.mockImplementation(async (_, __, options) => {
-      if (options?.listeners?.stdout) {
-        options.listeners.stdout(Buffer.from('{}'))
-      }
-      return 0
+    mockExec.getExecOutput.mockResolvedValue({
+      stdout: '{}',
+      stderr: '',
+      exitCode: 0
     })
 
     await run()

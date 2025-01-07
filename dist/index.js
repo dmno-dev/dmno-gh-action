@@ -27535,27 +27535,21 @@ async function run() {
         const packageManager = getPackageManager();
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
-        let outputData = '';
-        await (0,exec.exec)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
-            cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
-            listeners: {
-                stderr: (data) => {
-                    core.debug(data.toString());
-                },
-                stdout: (data) => {
-                    // core.debug(data.toString())
-                    outputData += data.toString();
-                }
-            }
+        const { stdout, stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
+            cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
         });
+        if (stderr) {
+            core.error(`Error: ${stderr}`);
+            throw new Error(`dmno resolve failed or empty output`);
+        }
         // Parse the complete output after exec finishes
         try {
             // Clean the string before parsing
-            const cleanedOutput = outputData.trim(); // Remove leading/trailing whitespace
+            const cleanedOutput = stdout.trim(); // Remove leading/trailing whitespace
             resolvedConfig = JSON.parse(cleanedOutput);
         }
         catch (error) {
-            core.debug('Failed to parse JSON output: ' + outputData);
+            core.debug(`Failed to parse JSON output: ${error instanceof Error ? error.message : String(error)}`);
             throw error;
         }
         if (!resolvedConfig.configNodes) {
