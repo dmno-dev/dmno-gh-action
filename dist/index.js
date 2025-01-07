@@ -27546,6 +27546,7 @@ async function run() {
         try {
             // Clean the string before parsing
             const cleanedOutput = stdout.trim(); // Remove leading/trailing whitespace
+            core.debug(cleanedOutput);
             resolvedConfig = JSON.parse(cleanedOutput);
         }
         catch (error) {

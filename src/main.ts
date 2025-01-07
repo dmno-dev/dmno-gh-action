@@ -95,6 +95,7 @@ export async function run(): Promise<void> {
     try {
       // Clean the string before parsing
       const cleanedOutput = stdout.trim() // Remove leading/trailing whitespace
+      core.debug(cleanedOutput)
       resolvedConfig = JSON.parse(cleanedOutput) as ResolvedConfig
     } catch (error) {
       core.debug(
