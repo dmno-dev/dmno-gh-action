@@ -73,7 +73,7 @@ describe('run', () => {
     await run()
 
     expect(mockExec.getExecOutput).toHaveBeenCalledWith(
-      'npm exec dmno resolve --service test-service --format json-full --no-prompt >> /tmp/dmno.json',
+      'npm exec dmno resolve --service test-service --format json-full --no-prompt',
       [],
       expect.any(Object)
     )

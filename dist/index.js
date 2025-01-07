@@ -27568,21 +27568,28 @@ async function run() {
         let resolvedConfig = { configNodes: {} };
         const tempFileLocation = `/tmp/dmno.json`;
         external_fs_default().writeFileSync(tempFileLocation, '', { mode: 0o644 });
-        const { stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')} >> ${tempFileLocation}`, [], {
+        // Execute dmno without output redirection
+        const { stdout, stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
         });
         if (stderr) {
             core.error(`Error: ${stderr}`);
             throw new Error(`dmno resolve failed: ${stderr}`);
         }
-        // Parse the complete output after exec finishes
+        // Write stdout to file and parse it
+        external_fs_default().writeFileSync(tempFileLocation, stdout, { mode: 0o644 });
         const cleanedOutput = external_fs_default().readFileSync(tempFileLocation, 'utf8').trim();
-        core.debug(cleanedOutput);
-        resolvedConfig = JSON.parse(cleanedOutput);
+        core.debug(`Output: ${cleanedOutput}`);
+        try {
+            resolvedConfig = JSON.parse(cleanedOutput);
+        }
+        catch (error) {
+            core.error(`Failed to parse JSON output: ${cleanedOutput}`);
+            throw new Error('Failed to parse dmno output as JSON', { cause: error });
+        }
         // Check for empty config after parsing
         if (!resolvedConfig.configNodes ||
             Object.keys(resolvedConfig.configNodes).length === 0) {
-            core.debug('dmno resolve failed or empty output');
             throw new Error('dmno resolve failed or empty output');
         }
         if (inputs.outputVars) {
