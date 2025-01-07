@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
-import fs from 'fs'
 import { run } from '../src/main.js'
 import { getPackageManager } from '../src/checks.js'
 
@@ -17,7 +16,6 @@ vi.mock('../src/checks.js', () => ({
 describe('run', () => {
   const mockCore = vi.mocked(core)
   const mockExec = vi.mocked(exec)
-  const mockFs = vi.mocked(fs)
   const mockGetPackageManager = vi.mocked(getPackageManager)
 
   beforeEach(() => {
@@ -48,10 +46,6 @@ describe('run', () => {
           return false
       }
     })
-
-    // Mock filesystem operations
-    mockFs.writeFileSync.mockImplementation(() => undefined)
-    mockFs.readFileSync.mockImplementation(() => '{}')
   })
 
   it('should execute dmno resolve with correct arguments', async () => {
@@ -63,9 +57,8 @@ describe('run', () => {
       }
     }
 
-    mockFs.readFileSync.mockReturnValue(JSON.stringify(sampleConfig))
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: '',
+      stdout: JSON.stringify(sampleConfig),
       stderr: '',
       exitCode: 0
     })
@@ -89,9 +82,8 @@ describe('run', () => {
       }
     }
 
-    mockFs.readFileSync.mockReturnValue(JSON.stringify(configWithSensitive))
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: '',
+      stdout: JSON.stringify(configWithSensitive),
       stderr: '',
       exitCode: 0
     })
@@ -114,9 +106,8 @@ describe('run', () => {
       }
     }
 
-    mockFs.readFileSync.mockReturnValue(JSON.stringify(sampleConfig))
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: '',
+      stdout: JSON.stringify(sampleConfig),
       stderr: '',
       exitCode: 0
     })
@@ -139,9 +130,8 @@ describe('run', () => {
   })
 
   it('should handle empty config gracefully', async () => {
-    mockFs.readFileSync.mockReturnValue('{"configNodes": {}}')
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: '',
+      stdout: JSON.stringify({ configNodes: {} }),
       stderr: '',
       exitCode: 0
     })

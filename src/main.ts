@@ -1,7 +1,7 @@
 import * as core from '@actions/core'
 import { getExecOutput } from '@actions/exec'
 import { getPackageManager, runAllChecks } from './checks.js'
-import fs from 'fs'
+
 interface InputOptions {
   serviceName: string
   baseDirectory: string
@@ -79,15 +79,19 @@ export async function run(): Promise<void> {
     const inputs = getInputs()
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
 
-    const tempFileLocation = `/tmp/dmno.json`
-    fs.writeFileSync(tempFileLocation, '', { mode: 0o644 })
-
-    // Execute dmno without output redirection
+    // Execute dmno and capture output directly
     const { stdout, stderr } = await getExecOutput(
       `${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`,
       [],
       {
-        cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
+        cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
+        listeners: {
+          stdout: (data: Buffer) => {
+            // remove %0A
+            const cleanedOutput = data.toString().replace(/\n/g, '')
+            core.debug(cleanedOutput)
+          }
+        }
       }
     )
 
@@ -96,15 +100,11 @@ export async function run(): Promise<void> {
       throw new Error(`dmno resolve failed: ${stderr}`)
     }
 
-    // Write stdout to file and parse it
-    fs.writeFileSync(tempFileLocation, stdout, { mode: 0o644 })
-    const cleanedOutput = fs.readFileSync(tempFileLocation, 'utf8').trim()
-    core.debug(`Output: ${cleanedOutput}`)
-
     try {
-      resolvedConfig = JSON.parse(cleanedOutput) as ResolvedConfig
+      const cleanStdout = stdout.replace(/\n/g, '').replace(/%0A/g, '')
+      resolvedConfig = JSON.parse(cleanStdout) as ResolvedConfig
     } catch (error) {
-      core.error(`Failed to parse JSON output: ${cleanedOutput}`)
+      core.error(`Failed to parse JSON output: ${stdout}`)
       throw new Error('Failed to parse dmno output as JSON', { cause: error })
     }
 

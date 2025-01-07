@@ -27394,35 +27394,6 @@ module.exports = parseParams
 /******/ }
 /******/ 
 /************************************************************************/
-/******/ /* webpack/runtime/compat get default export */
-/******/ (() => {
-/******/ 	// getDefaultExport function for compatibility with non-harmony modules
-/******/ 	__nccwpck_require__.n = (module) => {
-/******/ 		var getter = module && module.__esModule ?
-/******/ 			() => (module['default']) :
-/******/ 			() => (module);
-/******/ 		__nccwpck_require__.d(getter, { a: getter });
-/******/ 		return getter;
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/define property getters */
-/******/ (() => {
-/******/ 	// define getter functions for harmony exports
-/******/ 	__nccwpck_require__.d = (exports, definition) => {
-/******/ 		for(var key in definition) {
-/******/ 			if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
-/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
-/******/ 			}
-/******/ 		}
-/******/ 	};
-/******/ })();
-/******/ 
-/******/ /* webpack/runtime/hasOwnProperty shorthand */
-/******/ (() => {
-/******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
-/******/ })();
-/******/ 
 /******/ /* webpack/runtime/compat */
 /******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
@@ -27436,7 +27407,6 @@ var core = __nccwpck_require__(7484);
 var exec = __nccwpck_require__(5236);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(9896);
-var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
 ;// CONCATENATED MODULE: ./src/checks.ts
 
 
@@ -27519,7 +27489,6 @@ async function runAllChecks() {
 
 
 
-
 function getInputs() {
     return {
         serviceName: core.getInput('service-name'),
@@ -27566,25 +27535,27 @@ async function run() {
         const packageManager = getPackageManager();
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
-        const tempFileLocation = `/tmp/dmno.json`;
-        external_fs_default().writeFileSync(tempFileLocation, '', { mode: 0o644 });
-        // Execute dmno without output redirection
+        // Execute dmno and capture output directly
         const { stdout, stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
-            cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
+            cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
+            listeners: {
+                stdout: (data) => {
+                    // remove %0A
+                    const cleanedOutput = data.toString().replace(/\n/g, '');
+                    core.debug(cleanedOutput);
+                }
+            }
         });
         if (stderr) {
             core.error(`Error: ${stderr}`);
             throw new Error(`dmno resolve failed: ${stderr}`);
         }
-        // Write stdout to file and parse it
-        external_fs_default().writeFileSync(tempFileLocation, stdout, { mode: 0o644 });
-        const cleanedOutput = external_fs_default().readFileSync(tempFileLocation, 'utf8').trim();
-        core.debug(`Output: ${cleanedOutput}`);
         try {
-            resolvedConfig = JSON.parse(cleanedOutput);
+            const cleanStdout = stdout.replace(/\n/g, '').replace(/%0A/g, '');
+            resolvedConfig = JSON.parse(cleanStdout);
         }
         catch (error) {
-            core.error(`Failed to parse JSON output: ${cleanedOutput}`);
+            core.error(`Failed to parse JSON output: ${stdout}`);
             throw new Error('Failed to parse dmno output as JSON', { cause: error });
         }
         // Check for empty config after parsing
