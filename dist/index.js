@@ -27429,7 +27429,10 @@ function depsCheck() {
 function osCheck() {
     core.debug('Checking that the operating system is supported');
     // current only support macos and linux
-    if (!(core.platform.isLinux || core.platform.isMacOS)) {
+    if (
+    // when running local-action, core.platform does not exist
+    core.platform &&
+        !(core.platform.isLinux || core.platform.isMacOS)) {
         throw new Error('Unsupported operating system - only Linux and macOS are supported');
     }
     return true;
@@ -27503,10 +27506,11 @@ function getInputs() {
 }
 function createArgString(inputs) {
     const args = [];
-    // service
-    const serviceName = inputs.serviceName || 'root';
-    args.push(`--service ${serviceName}`);
-    // phase
+    // service selection
+    if (inputs.serviceName) {
+        args.push(`--service ${inputs.serviceName}`);
+    }
+    // phase (ex: test, build)
     if (inputs.phase) {
         args.push(`--phase ${inputs.phase}`);
     }
@@ -27522,7 +27526,6 @@ function createArgString(inputs) {
     args.push('--format json-full');
     // make cli non-interactive
     args.push('--no-prompt');
-    // console.log(args.join(' '))
     return args;
 }
 /**
@@ -27537,7 +27540,7 @@ async function run() {
         let resolvedConfig = { configNodes: {} };
         let outputBuf = '';
         // Execute dmno and capture output directly
-        const { stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
+        const { stderr } = await (0,exec.getExecOutput)(`${packageManager} exec -- dmno resolve ${createArgString(inputs).join(' ')}`, [], {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
             listeners: {
                 stdout: (data) => {
@@ -27565,7 +27568,11 @@ async function run() {
             throw new Error('dmno resolve failed or empty output');
         }
         if (inputs.outputVars) {
-            core.setOutput('dmno', JSON.stringify(resolvedConfig));
+            const configMap = Object.entries(resolvedConfig.configNodes).reduce((acc, [key, value]) => ({
+                ...acc,
+                [key]: value.resolvedValue
+            }), {});
+            core.setOutput('DMNO_CONFIG', configMap);
         }
         for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
             if (value.resolvedValue !== undefined) {

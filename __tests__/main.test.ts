@@ -67,7 +67,7 @@ describe('run', () => {
     await run()
 
     expect(mockExec.getExecOutput).toHaveBeenCalledWith(
-      'npm exec dmno resolve --service test-service --format json-full --no-prompt',
+      'npm exec -- dmno resolve --service test-service --format json-full --no-prompt',
       [],
       expect.any(Object)
     )
@@ -119,10 +119,9 @@ describe('run', () => {
 
     await run()
 
-    expect(mockCore.setOutput).toHaveBeenCalledWith(
-      'dmno',
-      JSON.stringify(sampleConfig)
-    )
+    expect(mockCore.setOutput).toHaveBeenCalledWith('DMNO_CONFIG', {
+      TEST_VAR: 'test-value'
+    })
   })
 
   it('should handle errors gracefully', async () => {

@@ -55,8 +55,6 @@ function createArgString(inputs: InputOptions): string[] {
   // make cli non-interactive
   args.push('--no-prompt')
 
-  // console.log(args.join(' '))
-
   return args
 }
 
@@ -119,7 +117,14 @@ export async function run(): Promise<void> {
     }
 
     if (inputs.outputVars) {
-      core.setOutput('dmno', JSON.stringify(resolvedConfig))
+      const configMap = Object.entries(resolvedConfig.configNodes).reduce(
+        (acc, [key, value]) => ({
+          ...acc,
+          [key]: value.resolvedValue
+        }),
+        {}
+      )
+      core.setOutput('DMNO_CONFIG', configMap)
     }
 
     for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
