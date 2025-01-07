@@ -25,7 +25,11 @@ export function depsCheck(): boolean {
 export function osCheck(): boolean {
   core.debug('Checking that the operating system is supported')
   // current only support macos and linux
-  if (!(core.platform.isLinux || core.platform.isMacOS)) {
+  if (
+    // when running local-action, core.platform does not exist
+    core.platform &&
+    !(core.platform.isLinux || core.platform.isMacOS)
+  ) {
     throw new Error(
       'Unsupported operating system - only Linux and macOS are supported'
     )

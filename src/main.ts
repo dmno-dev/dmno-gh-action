@@ -29,11 +29,12 @@ export function getInputs(): InputOptions {
 function createArgString(inputs: InputOptions): string[] {
   const args: string[] = []
 
-  // service
-  const serviceName = inputs.serviceName || 'root'
-  args.push(`--service ${serviceName}`)
+  // service selection
+  if (inputs.serviceName) {
+    args.push(`--service ${inputs.serviceName}`)
+  }
 
-  // phase
+  // phase (ex: test, build)
   if (inputs.phase) {
     args.push(`--phase ${inputs.phase}`)
   }
@@ -82,7 +83,7 @@ export async function run(): Promise<void> {
 
     // Execute dmno and capture output directly
     const { stderr } = await getExecOutput(
-      `${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`,
+      `${packageManager} exec -- dmno resolve ${createArgString(inputs).join(' ')}`,
       [],
       {
         cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
