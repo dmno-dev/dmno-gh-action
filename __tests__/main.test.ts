@@ -119,9 +119,12 @@ describe('run', () => {
 
     await run()
 
-    expect(mockCore.setOutput).toHaveBeenCalledWith('DMNO_CONFIG', {
-      TEST_VAR: 'test-value'
-    })
+    expect(mockCore.setOutput).toHaveBeenCalledWith(
+      'DMNO_CONFIG',
+      JSON.stringify({
+        TEST_VAR: 'test-value'
+      })
+    )
   })
 
   it('should handle errors gracefully', async () => {

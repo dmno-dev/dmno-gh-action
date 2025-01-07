@@ -11,7 +11,8 @@ branding:
 inputs:
   service-name:
     description:
-      'Explicitly select the service to populate config for (useful in a monorepo)'
+      'Explicitly select the service to populate config for (useful in a
+      monorepo)'
     required: false
   base-directory:
     description:
@@ -48,13 +49,7 @@ inputs:
 # Define your outputs here.
 outputs:
   DMNO_CONFIG:
-    description: |
-      Key/value pairs of the generated variables
-      This is a JSON object with the following format:
-      {
-        "KEY1": "value1",
-        "KEY2": "value2"
-      }
+    description: 'JSON string of key/value pairs of the generated variables'
 
 runs:
   using: node20

@@ -27570,7 +27570,7 @@ async function run() {
                 ...acc,
                 [key]: value.resolvedValue
             }), {});
-            core.setOutput('DMNO_CONFIG', configMap);
+            core.setOutput('DMNO_CONFIG', JSON.stringify(configMap));
         }
         for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
             if (value.resolvedValue !== undefined) {

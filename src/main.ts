@@ -122,7 +122,7 @@ export async function run(): Promise<void> {
         }),
         {}
       )
-      core.setOutput('DMNO_CONFIG', configMap)
+      core.setOutput('DMNO_CONFIG', JSON.stringify(configMap))
     }
 
     for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
