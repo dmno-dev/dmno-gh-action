@@ -11,17 +11,16 @@ branding:
 inputs:
   service-name:
     description:
-      'The name of the service to generate secrets for, defaults to "root"'
+      'Explicitly select the service to populate config for (useful in a monorepo)'
     required: false
-    default: 'root'
   base-directory:
     description:
-      'The base directory to generate secrets for, if not provided, the current
+      'The base directory to generate config for, if not provided, the current
       working directory will be used'
     required: false
     default: '.'
   phase:
-    description: 'The phase of the service to generate secrets for'
+    description: 'The phase of the service to generate config for'
     required: false
     default: ''
   emit-env-vars:
@@ -34,7 +33,7 @@ inputs:
     required: false
     default: false
   skip-regex:
-    description: 'The regex to skip secrets for, defaults to empty string'
+    description: 'The regex to skip config for, defaults to empty string'
     required: false
     default: ''
   skip-cache:
