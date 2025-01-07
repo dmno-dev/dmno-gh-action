@@ -48,10 +48,15 @@ inputs:
 
 # Define your outputs here.
 outputs:
-  dmno:
-    description: 'A stringified JSON object containing the generated variables'
+  DMNO_CONFIG:
+    description: |
+      Key/value pairs of the generated variables
+      This is a JSON object with the following format:
+      {
+        "KEY1": "value1",
+        "KEY2": "value2"
+      }
 
 runs:
   using: node20
-  # pre: dist/checks.js
   main: dist/index.js

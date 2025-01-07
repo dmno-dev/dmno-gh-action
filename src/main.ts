@@ -87,9 +87,7 @@ export async function run(): Promise<void> {
         cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
         listeners: {
           stdout: (data: Buffer) => {
-            // remove %0A
             const cleanedOutput = data.toString().replace(/\n/g, '')
-            core.debug(cleanedOutput)
             outputBuf += cleanedOutput
           }
         }
