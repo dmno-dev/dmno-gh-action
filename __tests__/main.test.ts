@@ -1,12 +1,14 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import * as core from '@actions/core'
 import * as exec from '@actions/exec'
+import fs from 'fs'
 import { run } from '../src/main.js'
 import { getPackageManager } from '../src/checks.js'
 
 // Mock dependencies
 vi.mock('@actions/core')
 vi.mock('@actions/exec')
+vi.mock('fs')
 vi.mock('../src/checks.js', () => ({
   getPackageManager: vi.fn(),
   runAllChecks: vi.fn().mockResolvedValue(true)
@@ -15,6 +17,7 @@ vi.mock('../src/checks.js', () => ({
 describe('run', () => {
   const mockCore = vi.mocked(core)
   const mockExec = vi.mocked(exec)
+  const mockFs = vi.mocked(fs)
   const mockGetPackageManager = vi.mocked(getPackageManager)
 
   beforeEach(() => {
@@ -31,15 +34,24 @@ describe('run', () => {
           return ''
         case 'skip-regex':
           return ''
-        case 'emit-env-vars':
-          return 'true'
-        case 'output-vars':
-          return 'true'
         default:
           return ''
       }
     })
-    mockCore.getBooleanInput.mockImplementation(() => false)
+    mockCore.getBooleanInput.mockImplementation((name: string) => {
+      switch (name) {
+        case 'output-vars':
+          return true
+        case 'emit-env-vars':
+          return true
+        default:
+          return false
+      }
+    })
+
+    // Mock filesystem operations
+    mockFs.writeFileSync.mockImplementation(() => undefined)
+    mockFs.readFileSync.mockImplementation(() => '{}')
   })
 
   it('should execute dmno resolve with correct arguments', async () => {
@@ -51,8 +63,9 @@ describe('run', () => {
       }
     }
 
+    mockFs.readFileSync.mockReturnValue(JSON.stringify(sampleConfig))
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify(sampleConfig),
+      stdout: '',
       stderr: '',
       exitCode: 0
     })
@@ -60,7 +73,7 @@ describe('run', () => {
     await run()
 
     expect(mockExec.getExecOutput).toHaveBeenCalledWith(
-      'npm exec dmno resolve --service test-service --format json-full --no-prompt',
+      'npm exec dmno resolve --service test-service --format json-full --no-prompt >> /tmp/dmno.json',
       [],
       expect.any(Object)
     )
@@ -76,8 +89,9 @@ describe('run', () => {
       }
     }
 
+    mockFs.readFileSync.mockReturnValue(JSON.stringify(configWithSensitive))
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify(configWithSensitive),
+      stdout: '',
       stderr: '',
       exitCode: 0
     })
@@ -92,10 +106,6 @@ describe('run', () => {
   })
 
   it('should handle output vars when enabled', async () => {
-    mockCore.getBooleanInput.mockImplementation(
-      (name: string) => name === 'output-vars'
-    )
-
     const sampleConfig = {
       configNodes: {
         TEST_VAR: {
@@ -104,8 +114,9 @@ describe('run', () => {
       }
     }
 
+    mockFs.readFileSync.mockReturnValue(JSON.stringify(sampleConfig))
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify(sampleConfig),
+      stdout: '',
       stderr: '',
       exitCode: 0
     })
@@ -128,8 +139,9 @@ describe('run', () => {
   })
 
   it('should handle empty config gracefully', async () => {
+    mockFs.readFileSync.mockReturnValue('{"configNodes": {}}')
     mockExec.getExecOutput.mockResolvedValue({
-      stdout: '{}',
+      stdout: '',
       stderr: '',
       exitCode: 0
     })

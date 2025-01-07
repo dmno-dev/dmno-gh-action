@@ -27394,6 +27394,35 @@ module.exports = parseParams
 /******/ }
 /******/ 
 /************************************************************************/
+/******/ /* webpack/runtime/compat get default export */
+/******/ (() => {
+/******/ 	// getDefaultExport function for compatibility with non-harmony modules
+/******/ 	__nccwpck_require__.n = (module) => {
+/******/ 		var getter = module && module.__esModule ?
+/******/ 			() => (module['default']) :
+/******/ 			() => (module);
+/******/ 		__nccwpck_require__.d(getter, { a: getter });
+/******/ 		return getter;
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/define property getters */
+/******/ (() => {
+/******/ 	// define getter functions for harmony exports
+/******/ 	__nccwpck_require__.d = (exports, definition) => {
+/******/ 		for(var key in definition) {
+/******/ 			if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 				Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 			}
+/******/ 		}
+/******/ 	};
+/******/ })();
+/******/ 
+/******/ /* webpack/runtime/hasOwnProperty shorthand */
+/******/ (() => {
+/******/ 	__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ })();
+/******/ 
 /******/ /* webpack/runtime/compat */
 /******/ 
 /******/ if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = new URL('.', import.meta.url).pathname.slice(import.meta.url.match(/^file:\/\/\/\w:/) ? 1 : 0, -1) + "/";
@@ -27407,6 +27436,7 @@ var core = __nccwpck_require__(7484);
 var exec = __nccwpck_require__(5236);
 // EXTERNAL MODULE: external "fs"
 var external_fs_ = __nccwpck_require__(9896);
+var external_fs_default = /*#__PURE__*/__nccwpck_require__.n(external_fs_);
 ;// CONCATENATED MODULE: ./src/checks.ts
 
 
@@ -27489,6 +27519,7 @@ async function runAllChecks() {
 
 
 
+
 function getInputs() {
     return {
         serviceName: core.getInput('service-name'),
@@ -27535,26 +27566,33 @@ async function run() {
         const packageManager = getPackageManager();
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
-        const { stdout, stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
+        const tempFileLocation = `/tmp/dmno.json`;
+        external_fs_default().writeFileSync(tempFileLocation, '');
+        const { stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')} >> ${tempFileLocation}`, [], {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
         });
         if (stderr) {
             core.error(`Error: ${stderr}`);
-            throw new Error(`dmno resolve failed or empty output`);
+            throw new Error(`dmno resolve failed: ${stderr}`);
         }
         // Parse the complete output after exec finishes
         try {
-            // Clean the string before parsing
-            const cleanedOutput = stdout.trim(); // Remove leading/trailing whitespace
+            const cleanedOutput = external_fs_default().readFileSync(tempFileLocation, 'utf8').trim();
             core.debug(cleanedOutput);
             resolvedConfig = JSON.parse(cleanedOutput);
+            // Check for empty config after parsing
+            if (!resolvedConfig.configNodes ||
+                Object.keys(resolvedConfig.configNodes).length === 0) {
+                throw new Error('dmno resolve failed or empty output');
+            }
         }
         catch (error) {
+            if (error instanceof Error &&
+                error.message === 'dmno resolve failed or empty output') {
+                throw error;
+            }
             core.debug(`Failed to parse JSON output: ${error instanceof Error ? error.message : String(error)}`);
-            throw error;
-        }
-        if (!resolvedConfig.configNodes) {
-            throw new Error(`dmno resolve failed or empty output`);
+            throw new Error('dmno resolve failed or empty output');
         }
         if (inputs.outputVars) {
             core.setOutput('dmno', JSON.stringify(resolvedConfig));
