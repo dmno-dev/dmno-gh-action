@@ -80,7 +80,7 @@ export async function run(): Promise<void> {
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
 
     const tempFileLocation = `/tmp/dmno.json`
-    fs.writeFileSync(tempFileLocation, '')
+    fs.writeFileSync(tempFileLocation, '', { mode: 0o644 })
 
     const { stderr } = await getExecOutput(
       `${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')} >> ${tempFileLocation}`,
@@ -96,28 +96,17 @@ export async function run(): Promise<void> {
     }
 
     // Parse the complete output after exec finishes
-    try {
-      const cleanedOutput = fs.readFileSync(tempFileLocation, 'utf8').trim()
-      core.debug(cleanedOutput)
-      resolvedConfig = JSON.parse(cleanedOutput) as ResolvedConfig
 
-      // Check for empty config after parsing
-      if (
-        !resolvedConfig.configNodes ||
-        Object.keys(resolvedConfig.configNodes).length === 0
-      ) {
-        throw new Error('dmno resolve failed or empty output')
-      }
-    } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === 'dmno resolve failed or empty output'
-      ) {
-        throw error
-      }
-      core.debug(
-        `Failed to parse JSON output: ${error instanceof Error ? error.message : String(error)}`
-      )
+    const cleanedOutput = fs.readFileSync(tempFileLocation, 'utf8').trim()
+    core.debug(cleanedOutput)
+    resolvedConfig = JSON.parse(cleanedOutput) as ResolvedConfig
+
+    // Check for empty config after parsing
+    if (
+      !resolvedConfig.configNodes ||
+      Object.keys(resolvedConfig.configNodes).length === 0
+    ) {
+      core.debug('dmno resolve failed or empty output')
       throw new Error('dmno resolve failed or empty output')
     }
 

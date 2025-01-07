@@ -27567,7 +27567,7 @@ async function run() {
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
         const tempFileLocation = `/tmp/dmno.json`;
-        external_fs_default().writeFileSync(tempFileLocation, '');
+        external_fs_default().writeFileSync(tempFileLocation, '', { mode: 0o644 });
         const { stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')} >> ${tempFileLocation}`, [], {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || ''
         });
@@ -27576,22 +27576,13 @@ async function run() {
             throw new Error(`dmno resolve failed: ${stderr}`);
         }
         // Parse the complete output after exec finishes
-        try {
-            const cleanedOutput = external_fs_default().readFileSync(tempFileLocation, 'utf8').trim();
-            core.debug(cleanedOutput);
-            resolvedConfig = JSON.parse(cleanedOutput);
-            // Check for empty config after parsing
-            if (!resolvedConfig.configNodes ||
-                Object.keys(resolvedConfig.configNodes).length === 0) {
-                throw new Error('dmno resolve failed or empty output');
-            }
-        }
-        catch (error) {
-            if (error instanceof Error &&
-                error.message === 'dmno resolve failed or empty output') {
-                throw error;
-            }
-            core.debug(`Failed to parse JSON output: ${error instanceof Error ? error.message : String(error)}`);
+        const cleanedOutput = external_fs_default().readFileSync(tempFileLocation, 'utf8').trim();
+        core.debug(cleanedOutput);
+        resolvedConfig = JSON.parse(cleanedOutput);
+        // Check for empty config after parsing
+        if (!resolvedConfig.configNodes ||
+            Object.keys(resolvedConfig.configNodes).length === 0) {
+            core.debug('dmno resolve failed or empty output');
             throw new Error('dmno resolve failed or empty output');
         }
         if (inputs.outputVars) {
