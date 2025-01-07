@@ -27535,14 +27535,16 @@ async function run() {
         const packageManager = getPackageManager();
         const inputs = getInputs();
         let resolvedConfig = { configNodes: {} };
+        let outputBuf = '';
         // Execute dmno and capture output directly
-        const { stdout, stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
+        const { stderr } = await (0,exec.getExecOutput)(`${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`, [], {
             cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
             listeners: {
                 stdout: (data) => {
                     // remove %0A
                     const cleanedOutput = data.toString().replace(/\n/g, '');
                     core.debug(cleanedOutput);
+                    outputBuf += cleanedOutput;
                 }
             }
         });
@@ -27551,11 +27553,10 @@ async function run() {
             throw new Error(`dmno resolve failed: ${stderr}`);
         }
         try {
-            const cleanStdout = stdout.replace(/\n/g, '').replace(/%0A/g, '');
-            resolvedConfig = JSON.parse(cleanStdout);
+            resolvedConfig = JSON.parse(outputBuf);
         }
         catch (error) {
-            core.error(`Failed to parse JSON output: ${stdout}`);
+            core.error(`Failed to parse JSON output: ${outputBuf}`);
             throw new Error('Failed to parse dmno output as JSON', { cause: error });
         }
         // Check for empty config after parsing

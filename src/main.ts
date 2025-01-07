@@ -78,9 +78,10 @@ export async function run(): Promise<void> {
     const packageManager = getPackageManager()
     const inputs = getInputs()
     let resolvedConfig: ResolvedConfig = { configNodes: {} }
+    let outputBuf = ''
 
     // Execute dmno and capture output directly
-    const { stdout, stderr } = await getExecOutput(
+    const { stderr } = await getExecOutput(
       `${packageManager} exec dmno resolve ${createArgString(inputs).join(' ')}`,
       [],
       {
@@ -90,6 +91,7 @@ export async function run(): Promise<void> {
             // remove %0A
             const cleanedOutput = data.toString().replace(/\n/g, '')
             core.debug(cleanedOutput)
+            outputBuf += cleanedOutput
           }
         }
       }
@@ -101,10 +103,9 @@ export async function run(): Promise<void> {
     }
 
     try {
-      const cleanStdout = stdout.replace(/\n/g, '').replace(/%0A/g, '')
-      resolvedConfig = JSON.parse(cleanStdout) as ResolvedConfig
+      resolvedConfig = JSON.parse(outputBuf) as ResolvedConfig
     } catch (error) {
-      core.error(`Failed to parse JSON output: ${stdout}`)
+      core.error(`Failed to parse JSON output: ${outputBuf}`)
       throw new Error('Failed to parse dmno output as JSON', { cause: error })
     }
 

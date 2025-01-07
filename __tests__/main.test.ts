@@ -57,10 +57,11 @@ describe('run', () => {
       }
     }
 
-    mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify(sampleConfig),
-      stderr: '',
-      exitCode: 0
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
     })
 
     await run()
@@ -82,10 +83,13 @@ describe('run', () => {
       }
     }
 
-    mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify(configWithSensitive),
-      stderr: '',
-      exitCode: 0
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(
+          Buffer.from(JSON.stringify(configWithSensitive))
+        )
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
     })
 
     await run()
@@ -106,10 +110,11 @@ describe('run', () => {
       }
     }
 
-    mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify(sampleConfig),
-      stderr: '',
-      exitCode: 0
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
     })
 
     await run()
@@ -130,10 +135,13 @@ describe('run', () => {
   })
 
   it('should handle empty config gracefully', async () => {
-    mockExec.getExecOutput.mockResolvedValue({
-      stdout: JSON.stringify({ configNodes: {} }),
-      stderr: '',
-      exitCode: 0
+    const emptyConfig = { configNodes: {} }
+
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(emptyConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
     })
 
     await run()
