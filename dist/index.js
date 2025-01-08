@@ -27566,11 +27566,15 @@ async function run() {
             throw new Error('dmno resolve failed or empty output');
         }
         if (inputs.outputVars) {
-            const configMap = Object.entries(resolvedConfig.configNodes).reduce((acc, [key, value]) => ({
+            let configKVs = Object.entries(resolvedConfig.configNodes).reduce((acc, [key, value]) => ({
                 ...acc,
                 [key]: value.resolvedValue
             }), {});
-            core.setOutput('DMNO_CONFIG', JSON.stringify(configMap));
+            if (inputs.skipRegex) {
+                const regex = new RegExp(inputs.skipRegex);
+                configKVs = Object.fromEntries(Object.entries(configKVs).filter(([key]) => !regex.test(key)));
+            }
+            core.setOutput('DMNO_CONFIG', JSON.stringify(configKVs));
         }
         if (inputs.emitEnvVars) {
             for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {

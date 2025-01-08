@@ -148,6 +148,50 @@ describe('run', () => {
     expect(mockCore.exportVariable).not.toHaveBeenCalled()
   })
 
+  it('should skip config when skip-regex is provided', async () => {
+    mockCore.getInput.mockImplementation((name: string) => {
+      switch (name) {
+        case 'skip-regex':
+          return 'SKIP_.*'
+        default:
+          return ''
+      }
+    })
+    const sampleConfig = {
+      configNodes: {
+        SKIP_ME: {
+          resolvedValue: 'skip-value'
+        },
+        SKIP_ME_TOO: {
+          resolvedValue: 'skip-value-too'
+        },
+        DONTSKIP: {
+          resolvedValue: 'non-skip-value'
+        },
+        DONTSKIPTOO: {
+          resolvedValue: 'non-skip-value-too'
+        }
+      }
+    }
+
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
+    })
+
+    await run()
+
+    expect(mockCore.setOutput).toHaveBeenCalledWith(
+      'DMNO_CONFIG',
+      JSON.stringify({
+        DONTSKIP: 'non-skip-value',
+        DONTSKIPTOO: 'non-skip-value-too'
+      })
+    )
+  })
+
   it('should handle errors gracefully', async () => {
     const errorMessage = 'Command failed'
     mockExec.getExecOutput.mockRejectedValue(new Error(errorMessage))
