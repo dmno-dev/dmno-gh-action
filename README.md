@@ -1,263 +1,140 @@
-# Create a GitHub Action Using TypeScript
-
 [![GitHub Super-Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
 ![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
 [![Check dist/](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml)
 [![CodeQL](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml)
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
 
-Use this template to bootstrap the creation of a TypeScript action. :rocket:
+# DMNO GitHub Action
 
-This template includes compilation support, tests, a validation workflow,
-publishing, and versioning guidance.
+Use your DMNO config to set outputs and environment variables in your GitHub
+Actions workflow. This allows you to more easily reuse config in other steps or
+jobs while benefitting from the security and safety features DMNO provides.
+Additionally, you no longer need to configure env vars and secrets in the GitHub
+UI.\*
 
-If you are new, there's also a simpler introduction in the
-[Hello world JavaScript action repository](https://github.com/actions/hello-world-javascript-action).
-
-## Create Your Own Action
-
-To create your own action, you can use this repository as a template! Just
-follow the below instructions:
-
-1. Click the **Use this template** button at the top of the repository
-1. Select **Create a new repository**
-1. Select an owner and name for your new repository
-1. Click **Create repository**
-1. Clone your new repository
-
-> [!IMPORTANT]
->
-> Make sure to remove or update the [`CODEOWNERS`](./CODEOWNERS) file! For
-> details on how to use this file, see
-> [About code owners](https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners).
-
-## Initial Setup
-
-After you've cloned the repository to your local machine or codespace, you'll
-need to perform some initial setup steps before you can develop your action.
-
-> [!NOTE]
->
-> You'll need to have a reasonably modern version of
-> [Node.js](https://nodejs.org) handy (20.x or later should work!). If you are
-> using a version manager like [`nodenv`](https://github.com/nodenv/nodenv) or
-> [`fnm`](https://github.com/Schniz/fnm), this template has a `.node-version`
-> file at the root of the repository that can be used to automatically switch to
-> the correct version when you `cd` into the repository. Additionally, this
-> `.node-version` file is used by GitHub Actions in any `actions/setup-node`
-> actions.
-
-1. :hammer_and_wrench: Install the dependencies
-
-   ```bash
-   npm install
-   ```
-
-1. :building_construction: Package the TypeScript for distribution
-
-   ```bash
-   npm run bundle
-   ```
-
-1. :white_check_mark: Run the tests
-
-   ```bash
-   $ npm test
-
-   PASS  ./index.test.js
-     ✓ throws invalid number (3ms)
-     ✓ wait 500 ms (504ms)
-     ✓ test runs (95ms)
-
-   ...
-   ```
-
-## Update the Action Metadata
-
-The [`action.yml`](action.yml) file defines metadata about your action, such as
-input(s) and output(s). For details about this file, see
-[Metadata syntax for GitHub Actions](https://docs.github.com/en/actions/creating-actions/metadata-syntax-for-github-actions).
-
-When you copy this repository, update `action.yml` with the name, description,
-inputs, and outputs for your action.
-
-## Update the Action Code
-
-The [`src/`](./src/) directory is the heart of your action! This contains the
-source code that will be run when your action is invoked. You can replace the
-contents of this directory with your own code.
-
-There are a few things to keep in mind when writing your action code:
-
-- Most GitHub Actions toolkit and CI/CD operations are processed asynchronously.
-  In `main.ts`, you will see that the action is run in an `async` function.
-
-  ```javascript
-  import * as core from '@actions/core'
-  //...
-
-  async function run() {
-    try {
-      //...
-    } catch (error) {
-      core.setFailed(error.message)
-    }
-  }
-  ```
-
-  For more information about the GitHub Actions toolkit, see the
-  [documentation](https://github.com/actions/toolkit/blob/master/README.md).
-
-So, what are you waiting for? Go ahead and start customizing your action!
-
-1. Create a new branch
-
-   ```bash
-   git checkout -b releases/v1
-   ```
-
-1. Replace the contents of `src/` with your action code
-1. Add tests to `__tests__/` for your source code
-1. Format, test, and build the action
-
-   ```bash
-   npm run all
-   ```
-
-   > This step is important! It will run [`ncc`](https://github.com/vercel/ncc)
-   > to build the final JavaScript action code with all dependencies included.
-   > If you do not run this step, your action will not work correctly when it is
-   > used in a workflow. This step also includes the `--license` option for
-   > `ncc`, which will create a license file for all of the production node
-   > modules used in your project.
-
-1. (Optional) Test your action locally
-
-   The [`@github/local-action`](https://github.com/github/local-action) utility
-   can be used to test your action locally. It is a simple command-line tool
-   that "stubs" (or simulates) the GitHub Actions Toolkit. This way, you can run
-   your TypeScript action locally without having to commit and push your changes
-   to a repository.
-
-   The `local-action` utility can be run in the following ways:
-
-   - Visual Studio Code Debugger
-
-     Make sure to review and, if needed, update
-     [`.vscode/launch.json`](./.vscode/launch.json)
-
-   - Terminal/Command Prompt
-
-     ```bash
-     # npx local action <action-yaml-path> <entrypoint> <dotenv-file>
-     npx local-action . src/main.ts .env
-     ```
-
-   You can provide a `.env` file to the `local-action` CLI to set environment
-   variables used by the GitHub Actions Toolkit. For example, setting inputs and
-   event payload data used by your action. For more information, see the example
-   file, [`.env.example`](./.env.example), and the
-   [GitHub Actions Documentation](https://docs.github.com/en/actions/learn-github-actions/variables#default-environment-variables).
-
-1. Commit your changes
-
-   ```bash
-   git add .
-   git commit -m "My first action is ready!"
-   ```
-
-1. Push them to your repository
-
-   ```bash
-   git push -u origin releases/v1
-   ```
-
-1. Create a pull request and get feedback on your action
-1. Merge the pull request into the `main` branch
-
-Your action is now published! :rocket:
-
-For information about versioning your action, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-## Validate the Action
-
-You can now validate the action by referencing it in a workflow file. For
-example, [`ci.yml`](./.github/workflows/ci.yml) demonstrates how to reference an
-action in the same repository.
-
-```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
-
-  - name: Test Local Action
-    id: test-action
-    uses: ./
-    with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
-```
-
-For example workflow runs, check out the
-[Actions tab](https://github.com/actions/typescript-action/actions)! :rocket:
+> [!IMPORTANT] Currently, you are required to already have a DMNO config file in
+> your repository. Get started with DMNO
+> [here](https://dmno.dev/docs/get-started/quickstart/)
 
 ## Usage
 
-After testing, you can create version tag(s) that developers can use to
-reference different stable versions of your action. For more information, see
-[Versioning](https://github.com/actions/toolkit/blob/master/docs/action-versioning.md)
-in the GitHub Actions toolkit.
-
-To include the action in a workflow in another repository, you can use the
-`uses` syntax with the `@` symbol to reference a specific branch, tag, or commit
-hash.
-
 ```yaml
-steps:
-  - name: Checkout
-    id: checkout
-    uses: actions/checkout@v4
-
-  - name: Test Local Action
-    id: test-action
-    uses: actions/typescript-action@v1 # Commit with the `v1` tag
-    with:
-      milliseconds: 1000
-
-  - name: Print Output
-    id: output
-    run: echo "${{ steps.test-action.outputs.time }}"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dmno/dmno-gh-action@v1
+        id: dmnoStep
+        with:
+          service-name: 'my-service'
+          base-directory: 'packages/my-service' # defaults to current working directory
+          phase: 'dev' # defaults to empty string
+          emit-env-vars: false # defaults to true
+          output-vars: true # defaults to false
+          skip-regex: 'SKIPME.*' # defaults to empty string
+          skip-cache: true # defaults to false
+          clear-cache: true # defaults to false
+      - id: nextStep
+        run: |
+          echo "DMNO_CONFIG: ${{ steps.dmnoStep.outputs.DMNO_CONFIG }}"
+          echo $MY_CONFIG_ITEM
 ```
 
-## Publishing a New Release
+## Inputs
 
-This project includes a helper script, [`script/release`](./script/release)
-designed to streamline the process of tagging and pushing new releases for
-GitHub Actions.
+- `service-name`: Explicitly select the service to populate config for (useful
+  in a monorepo with multiple services)
+- `base-directory`: The base directory to generate config for, if not provided,
+  the current working directory will be used
+- `phase`: The phase of the service to generate config for
+- `emit-env-vars`: Whether to emit environment variables, defaults to true
+- `output-vars`: Whether to also provide the variables in the output, defaults
+  to false
+- `skip-regex`: The regex to skip config for, defaults to empty string
+- `skip-cache`: Whether to skip the cache, defaults to false
+- `clear-cache`: Whether to clear the cache, defaults to false
 
-GitHub Actions allows users to select a specific version of the action to use,
-based on release tags. This script simplifies this process by performing the
-following steps:
+## Outputs
 
-1. **Retrieving the latest release tag:** The script starts by fetching the most
-   recent SemVer release tag of the current branch, by looking at the local data
-   available in your repository.
-1. **Prompting for a new release tag:** The user is then prompted to enter a new
-   release tag. To assist with this, the script displays the tag retrieved in
-   the previous step, and validates the format of the inputted tag (vX.X.X). The
-   user is also reminded to update the version field in package.json.
-1. **Tagging the new release:** The script then tags a new release and syncs the
-   separate major tag (e.g. v1, v2) with the new release tag (e.g. v1.0.0,
-   v2.1.2). When the user is creating a new major release, the script
-   auto-detects this and creates a `releases/v#` branch for the previous major
-   version.
-1. **Pushing changes to remote:** Finally, the script pushes the necessary
-   commits, tags and branches to the remote repository. From here, you will need
-   to create a new release in GitHub so users can easily reference the new tags
-   in their workflows.
+If `emit-env-vars` is `true`, each of your config variables will be emitted as
+an environment variable.
+
+If `output-vars` is `true`, `DMNO_CONFIG` is output as a JSON string of
+key/value pairs of the generated variables after being processed by the
+`skip-regex` regex.
+
+## Reusing the config in other steps or jobs
+
+You can use the `id` of the DMNO step to reference it in other steps. To reuse
+the config in another job, you must create an explicit `output` and then use
+that in subsequent jobs. Make sure to use the `needs` block to reference the job
+that has the DMNO step.
+
+## Example
+
+```yaml
+name: Example Multi-job DMNO GH Action
+
+on: workflow_dispatch
+
+jobs:
+  stepWithDmno:
+    runs-on: ubuntu-latest
+    outputs:
+      DMNO_CONFIG: ${{ steps.dmnoStep.outputs.DMNO_CONFIG }}
+      SUPABASE_URL: ${{ steps.testOutput.outputs.SUPABASE_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.14.4
+          run_install: true
+      - uses: dmno-dev/dmno-gh-action@v1
+        id: dmnoStep
+        env:
+          OP_TOKEN: ${{ secrets.OP_TOKEN }}
+        with:
+          output-vars: true
+          service-name: '@dmno-dev/astro-react-supabase-demo'
+      - id: testOutput
+        run: echo "SUPABASE_URL=$SUPABASE_URL" >> "$GITHUB_OUTPUT"
+  nextStep:
+    runs-on: ubuntu-latest
+    needs: stepWithDmno
+    steps:
+      - run: echo ${{ needs.stepWithDmno.outputs.DMNO_CONFIG }}
+      - run: echo ${{ needs.stepWithDmno.outputs.SUPABASE_URL }}
+```
+
+## Secret Zero
+
+If you are using one of the [plugins](https://dmno.dev/docs/plugins/overview/)
+you will need to set that plugin's secret in the `env` block, and accordingly in
+the GitHub UI. The benefit of this is that, in most cases, you will only need to
+set a single _secret zero_ and let DMNO handle the rest.
+
+```yaml
+name: Workflow with 1Password Plugin
+
+on: workflow_dispatch
+
+jobs:
+  myJob:
+    runs-on: ubuntu-latest
+    steps:
+      # REST OF WORKFLOW
+      - uses: dmno-dev/dmno-gh-action@v1
+        id: dmnoStep
+        env:
+          OP_TOKEN: ${{ secrets.OP_TOKEN }}
+      # REST OF WORKFLOW
+```
+
+## Thank you for checking out DMNO!
+
+If you have any questions or you just want to say hi, please reach out to us on
+[Discord](https://chat.dmno.dev)!
