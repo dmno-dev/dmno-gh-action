@@ -27497,7 +27497,7 @@ function getInputs() {
         serviceName: core.getInput('service-name'),
         baseDirectory: core.getInput('base-directory'),
         phase: core.getInput('phase'),
-        emitEnvVars: core.getBooleanInput('emit-env-vars'),
+        emitEnvVars: core.getBooleanInput('emit-env-vars') && true,
         outputVars: core.getBooleanInput('output-vars'),
         skipRegex: core.getInput('skip-regex'),
         skipCache: core.getBooleanInput('skip-cache'),
@@ -27572,12 +27572,14 @@ async function run() {
             }), {});
             core.setOutput('DMNO_CONFIG', JSON.stringify(configMap));
         }
-        for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
-            if (value.resolvedValue !== undefined) {
-                if (value.isSensitive) {
-                    core.setSecret(value.resolvedValue);
+        if (inputs.emitEnvVars) {
+            for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
+                if (value.resolvedValue !== undefined) {
+                    if (value.isSensitive) {
+                        core.setSecret(value.resolvedValue);
+                    }
+                    core.exportVariable(key, value.resolvedValue);
                 }
-                core.exportVariable(key, value.resolvedValue);
             }
         }
     }

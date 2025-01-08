@@ -127,6 +127,27 @@ describe('run', () => {
     )
   })
 
+  it('should output env vars when emit-env-vars is true', async () => {
+    await run()
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'TEST_VAR',
+      'test-value'
+    )
+  })
+
+  it('should not output env vars when emit-env-vars is false', async () => {
+    mockCore.getBooleanInput.mockImplementation((name: string) => {
+      switch (name) {
+        case 'emit-env-vars':
+          return false
+        default:
+          return false
+      }
+    })
+    await run()
+    expect(mockCore.exportVariable).not.toHaveBeenCalled()
+  })
+
   it('should handle errors gracefully', async () => {
     const errorMessage = 'Command failed'
     mockExec.getExecOutput.mockRejectedValue(new Error(errorMessage))
