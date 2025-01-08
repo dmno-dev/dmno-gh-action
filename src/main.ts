@@ -134,7 +134,10 @@ export async function run(): Promise<void> {
 
     if (inputs.emitEnvVars) {
       for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
-        if (value.resolvedValue !== undefined || regex.test(key)) {
+        if (inputs.skipRegex && regex.test(key)) {
+          continue
+        }
+        if (value.resolvedValue !== undefined) {
           if (value.isSensitive) {
             core.setSecret(value.resolvedValue)
           }

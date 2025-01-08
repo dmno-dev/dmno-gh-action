@@ -183,6 +183,14 @@ describe('run', () => {
 
     await run()
 
+    expect(mockCore.setOutput).not.toHaveBeenCalledWith(
+      'DMNO_CONFIG',
+      JSON.stringify({
+        SKIP_ME: 'skip-value',
+        SKIP_ME_TOO: 'skip-value-too'
+      })
+    )
+
     expect(mockCore.setOutput).toHaveBeenCalledWith(
       'DMNO_CONFIG',
       JSON.stringify({
@@ -190,6 +198,16 @@ describe('run', () => {
         DONTSKIPTOO: 'non-skip-value-too'
       })
     )
+
+    expect(mockCore.exportVariable).not.toHaveBeenCalledWith(
+      'SKIP_ME',
+      'skip-value'
+    )
+    expect(mockCore.exportVariable).not.toHaveBeenCalledWith(
+      'SKIP_ME_TOO',
+      'skip-value-too'
+    )
+
     expect(mockCore.exportVariable).toHaveBeenCalledWith(
       'DONTSKIP',
       'non-skip-value'
