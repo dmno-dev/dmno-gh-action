@@ -1,10 +1,10 @@
+# DMNO GitHub Action
+
 [![GitHub Super-Linter](https://github.com/actions/typescript-action/actions/workflows/linter.yml/badge.svg)](https://github.com/super-linter/super-linter)
 ![CI](https://github.com/actions/typescript-action/actions/workflows/ci.yml/badge.svg)
 [![Check dist/](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/check-dist.yml)
 [![CodeQL](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/actions/typescript-action/actions/workflows/codeql-analysis.yml)
 [![Coverage](./badges/coverage.svg)](./badges/coverage.svg)
-
-# DMNO GitHub Action
 
 Use your DMNO config to set outputs and environment variables in your GitHub
 Actions workflow. This allows you to more easily reuse config in other steps or
@@ -51,7 +51,8 @@ jobs:
 - `emit-env-vars`: Whether to emit environment variables, defaults to true
 - `output-vars`: Whether to also provide the variables in the output, defaults
   to false
-- `skip-regex`: The regex to skip config for, defaults to empty string
+- `skip-regex`: The regular expression to skip config for, defaults to empty
+  string
 - `skip-cache`: Whether to skip the cache, defaults to false
 - `clear-cache`: Whether to clear the cache, defaults to false
 
@@ -61,8 +62,8 @@ If `emit-env-vars` is `true`, each of your config variables will be emitted as
 an environment variable.
 
 If `output-vars` is `true`, `DMNO_CONFIG` is output as a JSON string of
-key/value pairs of the generated variables after being processed by the
-`skip-regex` regex.
+key-value pairs of the generated variables after being processed by the
+`skip-regex` regular expression.
 
 ## Reusing the config in other steps or jobs
 
@@ -134,7 +135,7 @@ jobs:
       # REST OF WORKFLOW
 ```
 
-## Thank you for checking out DMNO!
+## Thank you for checking out DMNO
 
 If you have any questions or you just want to say hi, please reach out to us on
 [Discord](https://chat.dmno.dev)!
