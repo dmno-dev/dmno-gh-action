@@ -60,5 +60,6 @@ rules:
     '@typescript-eslint/prefer-string-starts-ends-with': 'error',
     '@typescript-eslint/promise-function-async': 'error',
     '@typescript-eslint/require-array-sort-compare': 'error',
-    '@typescript-eslint/space-before-function-paren': 'off'
+    '@typescript-eslint/space-before-function-paren': 'off',
+    '@typescript-eslint/require-await': 'off'
   }

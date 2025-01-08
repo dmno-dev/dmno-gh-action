@@ -1,23 +1,55 @@
-name: 'The name of your action here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'DMNO Secrets and Config'
+description: 'Unified environment variables for GitHub Actions powered by DMNO'
+author: 'dmno-dev'
 
 # Add your action's branding here. This will appear on the GitHub Marketplace.
 branding:
-  icon: 'heart'
-  color: 'red'
+  icon: 'lock'
+  color: 'purple'
 
 # Define your inputs here.
 inputs:
-  milliseconds:
-    description: 'Your input description here'
-    required: true
-    default: '1000'
+  service-name:
+    description:
+      'Explicitly select the service to populate config for (useful in a
+      monorepo)'
+    required: false
+  base-directory:
+    description:
+      'The base directory to generate config for, if not provided, the current
+      working directory will be used'
+    required: false
+    default: '.'
+  phase:
+    description: 'The phase of the service to generate config for'
+    required: false
+    default: ''
+  emit-env-vars:
+    description: 'Whether to emit environment variables, defaults to true'
+    required: false
+    default: true
+  output-vars:
+    description:
+      'Whether to also provide the variables in the output, defaults to false'
+    required: false
+    default: false
+  skip-regex:
+    description: 'The regex to skip config for, defaults to empty string'
+    required: false
+    default: ''
+  skip-cache:
+    description: 'Whether to skip the cache, defaults to false'
+    required: false
+    default: false
+  clear-cache:
+    description: 'Whether to clear the cache, defaults to false'
+    required: false
+    default: false
 
 # Define your outputs here.
 outputs:
-  time:
-    description: 'Your output description here'
+  DMNO_CONFIG:
+    description: 'JSON string of key/value pairs of the generated variables'
 
 runs:
   using: node20

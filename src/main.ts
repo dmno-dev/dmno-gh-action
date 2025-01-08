@@ -1,5 +1,71 @@
 import * as core from '@actions/core'
-import { wait } from './wait'
+import { getExecOutput } from '@actions/exec'
+import { getPackageManager, runAllChecks } from './checks.js'
+
+interface InputOptions {
+  serviceName: string
+  baseDirectory: string
+  phase: string
+  emitEnvVars: boolean
+  outputVars: boolean
+  skipRegex: string
+  skipCache: boolean
+  clearCache: boolean
+}
+
+export function getInputs(): InputOptions {
+  return {
+    serviceName: core.getInput('service-name'),
+    baseDirectory: core.getInput('base-directory'),
+    phase: core.getInput('phase'),
+    emitEnvVars: core.getBooleanInput('emit-env-vars') && true,
+    outputVars: core.getBooleanInput('output-vars'),
+    skipRegex: core.getInput('skip-regex'),
+    skipCache: core.getBooleanInput('skip-cache'),
+    clearCache: core.getBooleanInput('clear-cache')
+  }
+}
+
+function createArgString(inputs: InputOptions): string[] {
+  const args: string[] = []
+
+  // service selection
+  if (inputs.serviceName) {
+    args.push(`--service ${inputs.serviceName}`)
+  }
+
+  // phase (ex: test, build)
+  if (inputs.phase) {
+    args.push(`--phase ${inputs.phase}`)
+  }
+
+  // skip cache
+  if (inputs.skipCache) {
+    args.push('--skip-cache')
+  }
+
+  // clear cache
+  if (inputs.clearCache) {
+    args.push('--clear-cache')
+  }
+
+  // json-full so we get all the metadata
+  args.push('--format json-full')
+
+  // make cli non-interactive
+  args.push('--no-prompt')
+
+  return args
+}
+
+interface ResolvedConfig {
+  configNodes: {
+    [key: string]: {
+      resolvedValue: string
+      isSensitive?: boolean
+    }
+  }
+}
 
 /**
  * The main function for the action.
@@ -7,20 +73,83 @@ import { wait } from './wait'
  */
 export async function run(): Promise<void> {
   try {
-    const ms: string = core.getInput('milliseconds')
+    await runAllChecks()
+    const packageManager = getPackageManager()
+    const inputs = getInputs()
+    let resolvedConfig: ResolvedConfig = { configNodes: {} }
+    let outputBuf = ''
 
-    // Debug logs are only output if the `ACTIONS_STEP_DEBUG` secret is true
-    core.debug(`Waiting ${ms} milliseconds ...`)
+    // Execute dmno and capture output directly
+    const { stderr } = await getExecOutput(
+      `${packageManager} exec -- dmno resolve ${createArgString(inputs).join(' ')}`,
+      [],
+      {
+        cwd: inputs.baseDirectory || process.env.GITHUB_WORKSPACE || '',
+        listeners: {
+          stdout: (data: Buffer) => {
+            const cleanedOutput = data.toString().replace(/\n/g, '')
+            outputBuf += cleanedOutput
+          }
+        }
+      }
+    )
 
-    // Log the current timestamp, wait, then log the new timestamp
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+    if (stderr) {
+      core.error(`Error: ${stderr}`)
+      throw new Error(`dmno resolve failed: ${stderr}`)
+    }
 
-    // Set outputs for other workflow steps to use
-    core.setOutput('time', new Date().toTimeString())
+    try {
+      resolvedConfig = JSON.parse(outputBuf) as ResolvedConfig
+    } catch (error) {
+      core.error(`Failed to parse JSON output: ${outputBuf}`)
+      throw new Error('Failed to parse dmno output as JSON', { cause: error })
+    }
+
+    // Check for empty config after parsing
+    if (
+      !resolvedConfig.configNodes ||
+      Object.keys(resolvedConfig.configNodes).length === 0
+    ) {
+      throw new Error('dmno resolve failed or empty output')
+    }
+
+    const regex = new RegExp(inputs.skipRegex)
+
+    if (inputs.outputVars) {
+      let configKVs = Object.entries(resolvedConfig.configNodes).reduce(
+        (acc, [key, value]) => ({
+          ...acc,
+          [key]: value.resolvedValue
+        }),
+        {}
+      )
+      if (inputs.skipRegex) {
+        configKVs = Object.fromEntries(
+          Object.entries(configKVs).filter(([key]) => !regex.test(key))
+        )
+      }
+      core.setOutput('DMNO_CONFIG', JSON.stringify(configKVs))
+    }
+
+    if (inputs.emitEnvVars) {
+      for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
+        if (inputs.skipRegex && regex.test(key)) {
+          continue
+        }
+        if (value.resolvedValue !== undefined) {
+          if (value.isSensitive) {
+            core.setSecret(value.resolvedValue)
+          }
+          core.exportVariable(key, value.resolvedValue)
+        }
+      }
+    }
   } catch (error) {
-    // Fail the workflow run if an error occurs
-    if (error instanceof Error) core.setFailed(error.message)
+    if (error instanceof Error) {
+      core.setFailed(error.message)
+    } else {
+      core.setFailed('An unexpected error occurred')
+    }
   }
 }

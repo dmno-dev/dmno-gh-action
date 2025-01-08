@@ -1,89 +1,246 @@
-/**
- * Unit tests for the action's main functionality, src/main.ts
- *
- * These should be run as if the action was called from a workflow.
- * Specifically, the inputs listed in `action.yml` should be set as environment
- * variables following the pattern `INPUT_<INPUT_NAME>`.
- */
-
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import * as core from '@actions/core'
-import * as main from '../src/main'
+import * as exec from '@actions/exec'
+import { run } from '../src/main.js'
+import { getPackageManager } from '../src/checks.js'
 
-// Mock the action's main function
-const runMock = jest.spyOn(main, 'run')
+// Mock dependencies
+vi.mock('@actions/core')
+vi.mock('@actions/exec')
+vi.mock('fs')
+vi.mock('../src/checks.js', () => ({
+  getPackageManager: vi.fn(),
+  runAllChecks: vi.fn().mockResolvedValue(true)
+}))
 
-// Other utilities
-const timeRegex = /^\d{2}:\d{2}:\d{2}/
+describe('run', () => {
+  const mockCore = vi.mocked(core)
+  const mockExec = vi.mocked(exec)
+  const mockGetPackageManager = vi.mocked(getPackageManager)
 
-// Mock the GitHub Actions core library
-let debugMock: jest.SpiedFunction<typeof core.debug>
-let errorMock: jest.SpiedFunction<typeof core.error>
-let getInputMock: jest.SpiedFunction<typeof core.getInput>
-let setFailedMock: jest.SpiedFunction<typeof core.setFailed>
-let setOutputMock: jest.SpiedFunction<typeof core.setOutput>
-
-describe('action', () => {
   beforeEach(() => {
-    jest.clearAllMocks()
+    vi.clearAllMocks()
 
-    debugMock = jest.spyOn(core, 'debug').mockImplementation()
-    errorMock = jest.spyOn(core, 'error').mockImplementation()
-    getInputMock = jest.spyOn(core, 'getInput').mockImplementation()
-    setFailedMock = jest.spyOn(core, 'setFailed').mockImplementation()
-    setOutputMock = jest.spyOn(core, 'setOutput').mockImplementation()
-  })
-
-  it('sets the time output', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
+    mockGetPackageManager.mockReturnValue('npm')
+    mockCore.getInput.mockImplementation((name: string) => {
       switch (name) {
-        case 'milliseconds':
-          return '500'
+        case 'service-name':
+          return 'test-service'
+        case 'base-directory':
+          return ''
+        case 'phase':
+          return ''
+        case 'skip-regex':
+          return ''
         default:
           return ''
       }
     })
-
-    await main.run()
-    expect(runMock).toHaveReturned()
-
-    // Verify that all of the core library functions were called correctly
-    expect(debugMock).toHaveBeenNthCalledWith(1, 'Waiting 500 milliseconds ...')
-    expect(debugMock).toHaveBeenNthCalledWith(
-      2,
-      expect.stringMatching(timeRegex)
-    )
-    expect(debugMock).toHaveBeenNthCalledWith(
-      3,
-      expect.stringMatching(timeRegex)
-    )
-    expect(setOutputMock).toHaveBeenNthCalledWith(
-      1,
-      'time',
-      expect.stringMatching(timeRegex)
-    )
-    expect(errorMock).not.toHaveBeenCalled()
+    mockCore.getBooleanInput.mockImplementation((name: string) => {
+      switch (name) {
+        case 'output-vars':
+          return true
+        case 'emit-env-vars':
+          return true
+        default:
+          return false
+      }
+    })
   })
 
-  it('sets a failed status', async () => {
-    // Set the action's inputs as return values from core.getInput()
-    getInputMock.mockImplementation(name => {
+  it('should execute dmno resolve with correct arguments', async () => {
+    const sampleConfig = {
+      configNodes: {
+        TEST_VAR: {
+          resolvedValue: 'test-value'
+        }
+      }
+    }
+
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
+    })
+
+    await run()
+
+    expect(mockExec.getExecOutput).toHaveBeenCalledWith(
+      'npm exec -- dmno resolve --service test-service --format json-full --no-prompt',
+      [],
+      expect.any(Object)
+    )
+  })
+
+  it('should handle sensitive values correctly', async () => {
+    const configWithSensitive = {
+      configNodes: {
+        SECRET_VAR: {
+          resolvedValue: 'secret-value',
+          isSensitive: true
+        }
+      }
+    }
+
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(
+          Buffer.from(JSON.stringify(configWithSensitive))
+        )
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
+    })
+
+    await run()
+
+    expect(mockCore.setSecret).toHaveBeenCalledWith('secret-value')
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'SECRET_VAR',
+      'secret-value'
+    )
+  })
+
+  it('should handle output vars when enabled', async () => {
+    const sampleConfig = {
+      configNodes: {
+        TEST_VAR: {
+          resolvedValue: 'test-value'
+        }
+      }
+    }
+
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
+    })
+
+    await run()
+
+    expect(mockCore.setOutput).toHaveBeenCalledWith(
+      'DMNO_CONFIG',
+      JSON.stringify({
+        TEST_VAR: 'test-value'
+      })
+    )
+  })
+
+  it('should output env vars when emit-env-vars is true', async () => {
+    await run()
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'TEST_VAR',
+      'test-value'
+    )
+  })
+
+  it('should not output env vars when emit-env-vars is false', async () => {
+    mockCore.getBooleanInput.mockImplementation((name: string) => {
       switch (name) {
-        case 'milliseconds':
-          return 'this is not a number'
+        case 'emit-env-vars':
+          return false
+        default:
+          return false
+      }
+    })
+    await run()
+    expect(mockCore.exportVariable).not.toHaveBeenCalled()
+  })
+
+  it('should skip outputs when skip-regex is provided', async () => {
+    mockCore.getInput.mockImplementation((name: string) => {
+      switch (name) {
+        case 'skip-regex':
+          return 'SKIP_.*'
         default:
           return ''
       }
     })
+    const sampleConfig = {
+      configNodes: {
+        SKIP_ME: {
+          resolvedValue: 'skip-value'
+        },
+        SKIP_ME_TOO: {
+          resolvedValue: 'skip-value-too'
+        },
+        DONTSKIP: {
+          resolvedValue: 'non-skip-value'
+        },
+        DONTSKIPTOO: {
+          resolvedValue: 'non-skip-value-too'
+        }
+      }
+    }
 
-    await main.run()
-    expect(runMock).toHaveReturned()
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(sampleConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
+    })
 
-    // Verify that all of the core library functions were called correctly
-    expect(setFailedMock).toHaveBeenNthCalledWith(
-      1,
-      'milliseconds not a number'
+    await run()
+
+    expect(mockCore.setOutput).not.toHaveBeenCalledWith(
+      'DMNO_CONFIG',
+      JSON.stringify({
+        SKIP_ME: 'skip-value',
+        SKIP_ME_TOO: 'skip-value-too'
+      })
     )
-    expect(errorMock).not.toHaveBeenCalled()
+
+    expect(mockCore.setOutput).toHaveBeenCalledWith(
+      'DMNO_CONFIG',
+      JSON.stringify({
+        DONTSKIP: 'non-skip-value',
+        DONTSKIPTOO: 'non-skip-value-too'
+      })
+    )
+
+    expect(mockCore.exportVariable).not.toHaveBeenCalledWith(
+      'SKIP_ME',
+      'skip-value'
+    )
+    expect(mockCore.exportVariable).not.toHaveBeenCalledWith(
+      'SKIP_ME_TOO',
+      'skip-value-too'
+    )
+
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'DONTSKIP',
+      'non-skip-value'
+    )
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'DONTSKIPTOO',
+      'non-skip-value-too'
+    )
+  })
+
+  it('should handle errors gracefully', async () => {
+    const errorMessage = 'Command failed'
+    mockExec.getExecOutput.mockRejectedValue(new Error(errorMessage))
+
+    await run()
+
+    expect(mockCore.setFailed).toHaveBeenCalledWith(errorMessage)
+  })
+
+  it('should handle empty config gracefully', async () => {
+    const emptyConfig = { configNodes: {} }
+
+    mockExec.getExecOutput.mockImplementation(async (_, __, options) => {
+      if (options?.listeners?.stdout) {
+        options.listeners.stdout(Buffer.from(JSON.stringify(emptyConfig)))
+      }
+      return { stdout: '', stderr: '', exitCode: 0 }
+    })
+
+    await run()
+
+    expect(mockCore.setFailed).toHaveBeenCalledWith(
+      'dmno resolve failed or empty output'
+    )
   })
 })
