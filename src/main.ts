@@ -114,6 +114,8 @@ export async function run(): Promise<void> {
       throw new Error('dmno resolve failed or empty output')
     }
 
+    const regex = new RegExp(inputs.skipRegex)
+
     if (inputs.outputVars) {
       let configKVs = Object.entries(resolvedConfig.configNodes).reduce(
         (acc, [key, value]) => ({
@@ -123,7 +125,6 @@ export async function run(): Promise<void> {
         {}
       )
       if (inputs.skipRegex) {
-        const regex = new RegExp(inputs.skipRegex)
         configKVs = Object.fromEntries(
           Object.entries(configKVs).filter(([key]) => !regex.test(key))
         )
@@ -133,7 +134,7 @@ export async function run(): Promise<void> {
 
     if (inputs.emitEnvVars) {
       for (const [key, value] of Object.entries(resolvedConfig.configNodes)) {
-        if (value.resolvedValue !== undefined) {
+        if (value.resolvedValue !== undefined || regex.test(key)) {
           if (value.isSensitive) {
             core.setSecret(value.resolvedValue)
           }

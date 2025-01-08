@@ -148,7 +148,7 @@ describe('run', () => {
     expect(mockCore.exportVariable).not.toHaveBeenCalled()
   })
 
-  it('should skip config when skip-regex is provided', async () => {
+  it('should skip outputs when skip-regex is provided', async () => {
     mockCore.getInput.mockImplementation((name: string) => {
       switch (name) {
         case 'skip-regex':
@@ -189,6 +189,14 @@ describe('run', () => {
         DONTSKIP: 'non-skip-value',
         DONTSKIPTOO: 'non-skip-value-too'
       })
+    )
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'DONTSKIP',
+      'non-skip-value'
+    )
+    expect(mockCore.exportVariable).toHaveBeenCalledWith(
+      'DONTSKIPTOO',
+      'non-skip-value-too'
     )
   })
 
