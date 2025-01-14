@@ -12,9 +12,8 @@ jobs while benefitting from the security and safety features DMNO provides.
 Additionally, you no longer need to configure env vars and secrets in the GitHub
 UI.\*
 
-> [!IMPORTANT] Currently, you are required to already have a DMNO config file in
-> your repository. Get started with DMNO
-> [here](https://dmno.dev/docs/get-started/quickstart/)
+> [!IMPORTANT]
+> Currently, you are required to already have a DMNO config file in your repository. Get started with DMNO [here](https://dmno.dev/docs/get-started/quickstart/)
 
 ## Usage
 
